@@ -161,3 +161,51 @@ class Simulation:
             if len(self.organisms) == 0:
                 # 個体がいない場合でも処理は続ける
                 pass
+    
+    def get_state(self) -> Dict[str, Any]:
+        """
+        現在のシミュレーション状態を返す
+        
+        Returns:
+            dict: 現在の状態を含む辞書
+                - step: 現在のステップ数
+                - organism_positions: 個体の座標リスト [(x, y), ...]
+                - organism_energies: 個体のエネルギーリスト
+                - organism_states: 個体の状態（"normal" or "can_reproduce"）
+                - food_positions: 食料の座標リスト
+                - population_size: 個体数
+                - food_count: 食料数
+                - average_energy: 平均エネルギー
+        """
+        org_config = self.config["organism"]
+        
+        organism_positions = [(org.x, org.y) for org in self.organisms]
+        organism_energies = [org.energy for org in self.organisms]
+        
+        # 個体の状態を判定
+        organism_states = []
+        for org in self.organisms:
+            if org.can_reproduce(org_config["reproduction_threshold"]):
+                organism_states.append("can_reproduce")
+            else:
+                organism_states.append("normal")
+        
+        food_positions = list(self.environment.food)
+        population_size = len(self.organisms)
+        food_count = self.environment.food_count()
+        
+        if population_size > 0:
+            average_energy = sum(organism_energies) / population_size
+        else:
+            average_energy = 0.0
+        
+        return {
+            "step": self.current_step,
+            "organism_positions": organism_positions,
+            "organism_energies": organism_energies,
+            "organism_states": organism_states,
+            "food_positions": food_positions,
+            "population_size": population_size,
+            "food_count": food_count,
+            "average_energy": average_energy
+        }

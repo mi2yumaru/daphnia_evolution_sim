@@ -4,11 +4,25 @@ main.py - シミュレーション実行エントリーポイント
 設定ファイルを読み込み、シミュレーションを実行し、結果を出力
 """
 
+import sys
 from pathlib import Path
 import yaml
 from simulation import Simulation
-from logger import SimulationLogger
 from visualizer import plot_population, plot_average_energy
+from live_visualizer import run_live_visualization
+
+
+def print_usage():
+    """使用方法を表示"""
+    print("使用方法:")
+    print("  通常モード (CSV と静的グラフを出力):")
+    print("    python src/main.py")
+    print()
+    print("  リアルタイム可視化モード:")
+    print("    python src/main.py --live")
+    print()
+    print("  ヘルプ表示:")
+    print("    python src/main.py --help")
 
 
 def main() -> None:
@@ -16,10 +30,11 @@ def main() -> None:
     メイン実行関数
     
     1. configs/default.yaml を読み込む
-    2. Simulation を作成して run() する
-    3. ログをCSVに保存する
-    4. グラフを生成して保存する
-    5. 出力ファイルのパスを表示する
+    2. コマンドラインオプションを処理
+    3. 通常モードまたはリアルタイム可視化モードでシミュレーションを実行
+    4. ログをCSVに保存する
+    5. グラフを生成して保存する
+    6. 出力ファイルのパスを表示する
     """
     # プロジェクトルート（main.py の親親ディレクトリ）を取得
     project_root = Path(__file__).parent.parent
@@ -34,11 +49,30 @@ def main() -> None:
     results_dir = project_root / "results"
     results_dir.mkdir(exist_ok=True)
     
+    # コマンドラインオプションを処理
+    live_mode = False
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "--live":
+            live_mode = True
+        elif sys.argv[1] in ["--help", "-h"]:
+            print_usage()
+            return
+        else:
+            print(f"不明なオプション: {sys.argv[1]}")
+            print_usage()
+            return
+    
     # シミュレーションを実行
-    print("シミュレーションを実行中...")
+    print("シミュレーションを作成中...")
     sim = Simulation(config)
-    sim.run()
-    print(f"シミュレーション完了。{sim.current_step} ステップ実行しました。")
+    
+    if live_mode:
+        print("リアルタイム可視化モードで実行中...")
+        run_live_visualization(sim)
+    else:
+        print("通常モードで実行中...")
+        sim.run()
+        print(f"シミュレーション完了。{sim.current_step} ステップ実行しました。")
     
     # ログをCSVに保存
     csv_path = project_root / config["simulation"]["output_csv"]

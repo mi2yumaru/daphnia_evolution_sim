@@ -71,9 +71,32 @@ pip install -r requirements.txt
 
 ## 実行方法
 
-### 基本的な実行
+### 基本的な実行（通常モード）
+
+CSV ログと静的グラフを出力します：
 ```bash
 python src/main.py
+```
+
+### リアルタイム可視化モード
+
+シミュレーション中に個体と食料の位置をリアルタイムで表示します：
+```bash
+python src/main.py --live
+```
+
+**リアルタイム可視化の特徴:**
+- 2Dグリッド上で個体と食料をリアルタイムに表示
+- 青い点: 通常の個体
+- 赤い点: 繁殖可能な個体
+- 緑の点: 食料
+- タイトルに現在のステップ、個体数、食料数、平均エネルギーを表示
+- ウィンドウを閉じるか Ctrl+C で終了
+
+### ヘルプ表示
+
+```bash
+python src/main.py --help
 ```
 
 ### 出力ファイル
@@ -122,6 +145,14 @@ genetics:
 environment_change:
   enabled: false           # 環境変動の有無
   period: 200              # 環境変動の周期（将来実装用）
+
+visualization:
+  enabled: true            # 可視化機能の有効/無効
+  interval_ms: 100         # リアルタイム描画の更新間隔（ミリ秒）
+  show_food: true          # 食料を表示するか
+  show_organisms: true     # 個体を表示するか
+  save_animation: false    # アニメーション保存（将来実装用）
+  animation_path: "results/simulation.gif"  # アニメーション保存先
 ```
 
 ## プロジェクト構造
@@ -139,7 +170,8 @@ daphnia_simulation/
 │  ├─ organism.py               # Organism クラス（個体）
 │  ├─ food.py                   # Food クラス（食料、将来拡張用）
 │  ├─ logger.py                 # SimulationLogger クラス（ログ記録）
-│  └─ visualizer.py             # グラフ出力関数
+│  ├─ visualizer.py             # グラフ出力関数
+│  └─ live_visualizer.py        # リアルタイム可視化クラス
 ├─ data/                        # 入力データ用ディレクトリ
 └─ results/                     # 出力ファイル用ディレクトリ
     ├─ log.csv                  # 統計ログ
@@ -169,6 +201,12 @@ Simulation クラスが主制御ロジックを担い、各ステップでの環
 
 ### `src/main.py`
 実行エントリーポイント。YAML設定を読み込み、シミュレーションを実行し、結果を出力します。
+コマンドラインオプション（`--live`, `--help`）をサポートしています。
+
+### `src/live_visualizer.py`
+matplotlib を使ってシミュレーション状態をリアルタイムに可視化するクラス。
+`python src/main.py --live` で実行時に、2Dグリッド上の個体と食料の位置をリアルタイムに表示します。
+個体の繁殖状態や統計情報もグラフに表示されます。
 
 ## トラブルシューティング
 

@@ -31,3 +31,11 @@ genetics:
 environment_change:
   enabled: false
   period: 200
+
+visualization:
+  enabled: true
+  interval_ms: 100
+  show_food: true
+  show_organisms: true
+  save_animation: false
+  animation_path: "results/simulation.gif"
