@@ -1,0 +1,33 @@
+simulation:
+  steps: 1000
+  random_seed: 42
+  output_csv: "results/log.csv"
+  population_plot: "results/population.png"
+  energy_plot: "results/average_energy.png"
+
+environment:
+  width: 50
+  height: 50
+  initial_food_count: 500
+  food_respawn_rate: 0.02
+  food_energy: 5
+
+organism:
+  initial_population: 100
+  initial_energy: 10
+  move_cost: 1.0
+  living_cost: 0.1
+  reproduction_threshold: 20
+  reproduction_cost: 10
+  offspring_energy: 5
+  max_age: 200
+  move_type: "moore"
+
+genetics:
+  genome_length: 20
+  mutation_rate: 0.01
+  recombination_rate: 0.0
+
+environment_change:
+  enabled: false
+  period: 200
