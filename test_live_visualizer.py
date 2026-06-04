@@ -68,6 +68,40 @@ def test_live_visualizer_initialization():
     print()
 
 
+def test_save_video_file():
+    """MP4 動画保存が動作することを確認"""
+    print("=" * 50)
+    print("テスト 4: MP4 動画保存")
+    print("=" * 50)
+
+    config_path = Path(__file__).parent / "configs" / "default.yaml"
+    with open(config_path, "r", encoding="utf-8") as f:
+        config = yaml.safe_load(f)
+
+    visualizer = LiveVisualizer(
+        width=config['environment']['width'],
+        height=config['environment']['height'],
+        save_video=True
+    )
+
+    # 最低1フレームを生成して保存
+    visualizer.fig.canvas.draw()
+    visualizer.capture_frame()
+
+    output_path = Path(__file__).parent / "results" / "test_simulation.mp4"
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    if output_path.exists():
+        output_path.unlink()
+
+    visualizer.save_video_file(str(output_path), 100)
+    assert output_path.exists(), "MP4 ファイルが作成されていません"
+    print(f"✓ MP4 動画が生成されました: {output_path}")
+
+    output_path.unlink(missing_ok=True)
+    visualizer.close()
+    print()
+
+
 def test_single_step_with_visualization():
     """1ステップの実行と可視化状態の確認"""
     print("=" * 50)

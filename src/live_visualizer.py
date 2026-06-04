@@ -9,6 +9,8 @@ from pathlib import Path
 from typing import Dict, Any
 import matplotlib.pyplot as plt
 from PIL import Image
+import numpy as np
+import imageio
 
 
 class LiveVisualizer:
@@ -16,7 +18,7 @@ class LiveVisualizer:
     シミュレーション状態をリアルタイムに可視化するクラス
     """
     
-    def __init__(self, width: int, height: int, interval_ms: int = 100, save_animation: bool = False):
+    def __init__(self, width: int, height: int, interval_ms: int = 100, save_animation: bool = False, save_video: bool = False):
         """
         ビジュアライザーを初期化
         
@@ -24,12 +26,14 @@ class LiveVisualizer:
             width: グリッドの幅
             height: グリッドの高さ
             interval_ms: 描画の更新間隔（ミリ秒）
-            save_animation: アニメーションを保存するかどうか
+            save_animation: GIF アニメーションを保存するかどうか
+            save_video: MP4 動画を保存するかどうか
         """
         self.width = width
         self.height = height
         self.interval_ms = interval_ms
         self.save_animation = save_animation
+        self.save_video = save_video
         self.frames: list[Image.Image] = []
         
         # Figure と Axis を作成
@@ -135,31 +139,71 @@ class LiveVisualizer:
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
 
-        if self.save_animation:
+        if self.save_animation or self.save_video:
             self.capture_frame()
-    
+
     def capture_frame(self) -> None:
-        """現在のフレームをキャプチャして保存リストに追加"""
+        """現在のFigureをPNGとしてキャプチャし、フレームリストに追加する"""
         buffer = BytesIO()
-        self.fig.savefig(buffer, format="png", dpi=self.fig.dpi)
+        self.fig.savefig(buffer, format="png", dpi=100)
         buffer.seek(0)
         image = Image.open(buffer).convert("RGB")
         self.frames.append(image)
 
-    def save_animation_file(self, path: str, interval_ms: int) -> None:
-        """キャプチャしたフレームを GIF ファイルに保存"""
+    def save_gif_file(self, path: str, interval_ms: int) -> None:
+        """保存された状態から GIF ファイルを生成"""
         if not self.frames:
             return
         output_path = Path(path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         duration = max(1, interval_ms)
-        self.frames[0].save(
+
+        # Pillow を使って共通パレットで量子化し GIF を作成（色揺れ防止）
+        width, height = self.frames[0].size
+        combined = Image.new("RGB", (width * len(self.frames), height))
+        for i, f in enumerate(self.frames):
+            combined.paste(f.convert("RGB"), (i * width, 0))
+
+        palette_source = combined.convert("P", palette=Image.ADAPTIVE, colors=256)
+
+        # 各フレームを共通パレットで量子化
+        quantized_frames = [f.convert("RGB").quantize(palette=palette_source) for f in self.frames]
+        common_palette = palette_source.getpalette()
+        for q in quantized_frames:
+            q.putpalette(common_palette)
+
+        # 保存
+        quantized_frames[0].save(
             str(output_path),
             save_all=True,
-            append_images=self.frames[1:],
+            append_images=quantized_frames[1:],
             duration=duration,
-            loop=0
+            loop=0,
+            disposal=2,
+            optimize=False,
+            background=0,
         )
+
+    def save_video_file(self, path: str, interval_ms: int) -> None:
+        """保存された状態から MP4 動画を生成"""
+        if not self.frames:
+            return
+        output_path = Path(path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        fps = max(1, 1000 / max(1, interval_ms))
+
+        frames_np = [np.array(frame.convert("RGB")) for frame in self.frames]
+        imageio.mimsave(
+            str(output_path),
+            frames_np,
+            fps=fps,
+            format="FFMPEG",
+            codec="libx264",
+            ffmpeg_params=["-pix_fmt", "yuv420p"],
+        )
+
+    def save_animation_file(self, path: str, interval_ms: int) -> None:
+        self.save_gif_file(path, interval_ms)
 
     def close(self) -> None:
         """ビジュアライザーを閉じる"""
@@ -179,14 +223,17 @@ def run_live_visualization(sim) -> None:
     
     interval_ms = vis_config.get("interval_ms", 100)
     save_animation = vis_config.get("save_animation", False)
+    save_video = vis_config.get("save_video", False)
     animation_path = vis_config.get("animation_path", "results/simulation.gif")
+    video_path = vis_config.get("video_path", "results/simulation.mp4")
     
     print(f"リアルタイム可視化ウィンドウを作成中...")
     visualizer = LiveVisualizer(
         width=env_config["width"],
         height=env_config["height"],
         interval_ms=interval_ms,
-        save_animation=save_animation
+        save_animation=save_animation,
+        save_video=save_video
     )
     
     # インタラクティブモードを有効化
@@ -232,6 +279,14 @@ def run_live_visualization(sim) -> None:
                 print(f"アニメーションを保存しました: {animation_path}")
             except Exception as exc:
                 print(f"アニメーションの保存に失敗しました: {exc}")
+
+        if save_video:
+            try:
+                visualizer.save_video_file(video_path, interval_ms)
+                print(f"動画を保存しました: {video_path}")
+            except Exception as exc:
+                print(f"動画の保存に失敗しました: {exc}")
+
         visualizer.close()
         print(f"\n=== シミュレーション完了 ===")
         print(f"実行ステップ: {sim.current_step}")

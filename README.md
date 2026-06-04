@@ -106,6 +106,7 @@ python src/main.py --help
 - **log.csv**: 各ステップの統計情報（ステップ数、個体数、食料数、平均エネルギー）
 - **population.png**: 個体数の時系列グラフ
 - **average_energy.png**: 平均エネルギーの時系列グラフ
+- **simulation.mp4**: リアルタイム可視化モードで保存された MP4 動画（`visualization.save_video` が有効な場合）
 
 ### 設定のカスタマイズ
 
@@ -151,8 +152,10 @@ visualization:
   interval_ms: 100         # リアルタイム描画の更新間隔（ミリ秒）
   show_food: true          # 食料を表示するか
   show_organisms: true     # 個体を表示するか
-  save_animation: false    # アニメーション保存（将来実装用）
-  animation_path: "results/simulation.gif"  # アニメーション保存先
+  save_animation: false    # GIF アニメーションを保存するかどうか
+  animation_path: "results/simulation.gif"  # GIF アニメーション保存先
+  save_video: true         # MP4 動画を保存するかどうか
+  video_path: "results/simulation.mp4"      # MP4 動画保存先
 ```
 
 ## プロジェクト構造
@@ -176,7 +179,8 @@ daphnia_simulation/
 └─ results/                     # 出力ファイル用ディレクトリ
     ├─ log.csv                  # 統計ログ
     ├─ population.png           # 個体数グラフ
-    └─ average_energy.png       # 平均エネルギーグラフ
+    ├─ average_energy.png       # 平均エネルギーグラフ
+    └─ simulation.mp4           # リアルタイム可視化動画（動画保存を有効にした場合）
 ```
 
 ## 各モジュールの説明

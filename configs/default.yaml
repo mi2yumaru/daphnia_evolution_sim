@@ -40,5 +40,7 @@ visualization:
   interval_ms: 100
   show_food: true
   show_organisms: true
-  save_animation: true
+  save_animation: false
   animation_path: "results/simulation.gif"
+  save_video: true
+  video_path: "results/simulation.mp4"
