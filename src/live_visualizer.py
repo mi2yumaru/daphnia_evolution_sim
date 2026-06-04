@@ -4,10 +4,10 @@ live_visualizer.py - リアルタイム可視化
 matplotlib を使ってシミュレーションの状態をリアルタイムに表示
 """
 
+from pathlib import Path
 from typing import Dict, Any
 import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-import numpy as np
+from PIL import Image
 
 
 class LiveVisualizer:
@@ -15,7 +15,7 @@ class LiveVisualizer:
     シミュレーション状態をリアルタイムに可視化するクラス
     """
     
-    def __init__(self, width: int, height: int, interval_ms: int = 100):
+    def __init__(self, width: int, height: int, interval_ms: int = 100, save_animation: bool = False):
         """
         ビジュアライザーを初期化
         
@@ -23,10 +23,13 @@ class LiveVisualizer:
             width: グリッドの幅
             height: グリッドの高さ
             interval_ms: 描画の更新間隔（ミリ秒）
+            save_animation: アニメーションを保存するかどうか
         """
         self.width = width
         self.height = height
         self.interval_ms = interval_ms
+        self.save_animation = save_animation
+        self.frames: list[Image.Image] = []
         
         # Figure と Axis を作成
         self.fig, self.ax = plt.subplots(figsize=(10, 10))
@@ -130,7 +133,33 @@ class LiveVisualizer:
         # 描画を更新
         self.fig.canvas.draw()
         self.fig.canvas.flush_events()
+
+        if self.save_animation:
+            self.capture_frame()
     
+    def capture_frame(self) -> None:
+        """現在のフレームをキャプチャして保存リストに追加"""
+        self.fig.canvas.draw()
+        width, height = self.fig.canvas.get_width_height()
+        buf = self.fig.canvas.tostring_argb()
+        image = Image.frombytes("RGBA", (width, height), buf, "raw", "ARGB")
+        self.frames.append(image.convert("RGB"))
+
+    def save_animation_file(self, path: str, interval_ms: int) -> None:
+        """キャプチャしたフレームを GIF ファイルに保存"""
+        if not self.frames:
+            return
+        output_path = Path(path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        duration = max(1, interval_ms)
+        self.frames[0].save(
+            str(output_path),
+            save_all=True,
+            append_images=self.frames[1:],
+            duration=duration,
+            loop=0
+        )
+
     def close(self) -> None:
         """ビジュアライザーを閉じる"""
         plt.close(self.fig)
@@ -148,12 +177,15 @@ def run_live_visualization(sim) -> None:
     vis_config = sim.config.get("visualization", {})
     
     interval_ms = vis_config.get("interval_ms", 100)
+    save_animation = vis_config.get("save_animation", False)
+    animation_path = vis_config.get("animation_path", "results/simulation.gif")
     
     print(f"リアルタイム可視化ウィンドウを作成中...")
     visualizer = LiveVisualizer(
         width=env_config["width"],
         height=env_config["height"],
-        interval_ms=interval_ms
+        interval_ms=interval_ms,
+        save_animation=save_animation
     )
     
     # インタラクティブモードを有効化
@@ -193,6 +225,12 @@ def run_live_visualization(sim) -> None:
         print("\n\nシミュレーションが中断されました")
     
     finally:
+        if save_animation:
+            try:
+                visualizer.save_animation_file(animation_path, interval_ms)
+                print(f"アニメーションを保存しました: {animation_path}")
+            except Exception as exc:
+                print(f"アニメーションの保存に失敗しました: {exc}")
         visualizer.close()
         print(f"\n=== シミュレーション完了 ===")
         print(f"実行ステップ: {sim.current_step}")

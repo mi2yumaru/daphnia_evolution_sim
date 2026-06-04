@@ -9,8 +9,8 @@ simulation:
   death_count_plot: "results/death_count.png"
 
 environment:
-  width: 50
-  height: 50
+  width: 100
+  height: 100
   initial_food_count: 500
   food_respawn_rate: 0.02
   food_energy: 5
@@ -40,5 +40,5 @@ visualization:
   interval_ms: 100
   show_food: true
   show_organisms: true
-  save_animation: false
+  save_animation: true
   animation_path: "results/simulation.gif"
