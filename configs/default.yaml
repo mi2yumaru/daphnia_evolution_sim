@@ -4,6 +4,9 @@ simulation:
   output_csv: "results/log.csv"
   population_plot: "results/population.png"
   energy_plot: "results/average_energy.png"
+  average_age_plot: "results/average_age.png"
+  birth_count_plot: "results/birth_count.png"
+  death_count_plot: "results/death_count.png"
 
 environment:
   width: 50

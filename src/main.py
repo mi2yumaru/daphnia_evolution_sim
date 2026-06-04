@@ -8,7 +8,13 @@ import sys
 from pathlib import Path
 import yaml
 from simulation import Simulation
-from visualizer import plot_population, plot_average_energy
+from visualizer import (
+    plot_population,
+    plot_average_energy,
+    plot_average_age,
+    plot_birth_count,
+    plot_death_count
+)
 from live_visualizer import run_live_visualization
 
 
@@ -90,6 +96,18 @@ def main() -> None:
     energy_plot_path = project_root / config["simulation"]["energy_plot"]
     plot_average_energy(df, str(energy_plot_path))
     print(f"平均エネルギーグラフを保存しました: {energy_plot_path}")
+    
+    age_plot_path = project_root / config["simulation"].get("average_age_plot", "results/average_age.png")
+    plot_average_age(df, str(age_plot_path))
+    print(f"平均年齢グラフを保存しました: {age_plot_path}")
+    
+    birth_plot_path = project_root / config["simulation"].get("birth_count_plot", "results/birth_count.png")
+    plot_birth_count(df, str(birth_plot_path))
+    print(f"誕生数グラフを保存しました: {birth_plot_path}")
+    
+    death_plot_path = project_root / config["simulation"].get("death_count_plot", "results/death_count.png")
+    plot_death_count(df, str(death_plot_path))
+    print(f"死亡数グラフを保存しました: {death_plot_path}")
     
     # 最終統計情報を表示
     print("\n=== シミュレーション完了 ===")
