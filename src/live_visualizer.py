@@ -4,6 +4,7 @@ live_visualizer.py - リアルタイム可視化
 matplotlib を使ってシミュレーションの状態をリアルタイムに表示
 """
 
+from io import BytesIO
 from pathlib import Path
 from typing import Dict, Any
 import matplotlib.pyplot as plt
@@ -139,11 +140,11 @@ class LiveVisualizer:
     
     def capture_frame(self) -> None:
         """現在のフレームをキャプチャして保存リストに追加"""
-        self.fig.canvas.draw()
-        width, height = self.fig.canvas.get_width_height()
-        buf = self.fig.canvas.tostring_argb()
-        image = Image.frombytes("RGBA", (width, height), buf, "raw", "ARGB")
-        self.frames.append(image.convert("RGB"))
+        buffer = BytesIO()
+        self.fig.savefig(buffer, format="png", dpi=self.fig.dpi)
+        buffer.seek(0)
+        image = Image.open(buffer).convert("RGB")
+        self.frames.append(image)
 
     def save_animation_file(self, path: str, interval_ms: int) -> None:
         """キャプチャしたフレームを GIF ファイルに保存"""
