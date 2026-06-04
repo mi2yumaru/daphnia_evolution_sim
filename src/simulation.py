@@ -58,6 +58,10 @@ class Simulation:
         
         # ステップ数
         self.current_step = 0
+        
+        # 前ステップの生死情報（リアルタイム可視化用）
+        self.last_birth_count = 0
+        self.last_death_count = 0
     
     def step(self) -> None:
         """
@@ -77,6 +81,9 @@ class Simulation:
         org_config = self.config["organism"]
         env_config = self.config["environment"]
         gen_config = self.config["genetics"]
+        
+        # ステップ前の個体数（死亡数を計算するため）
+        population_before = len(self.organisms)
         
         # 1. 各個体の age を増やす
         for organism in self.organisms:
@@ -122,6 +129,10 @@ class Simulation:
             if not org.is_dead(org_config["max_age"])
         ]
         
+        # 死亡数を計算
+        death_count = population_before - len(self.organisms)
+        birth_count = len(new_offspring)
+        
         # 7. 新しい子個体を追加する
         self.organisms.extend(new_offspring)
         
@@ -144,8 +155,14 @@ class Simulation:
             population_size=population_size,
             food_count=food_count,
             average_energy=average_energy,
-            average_age=average_age
+            average_age=average_age,
+            birth_count=birth_count,
+            death_count=death_count
         )
+        
+        # 前ステップの生死情報を更新
+        self.last_birth_count = birth_count
+        self.last_death_count = death_count
         
         self.current_step += 1
     
@@ -213,5 +230,7 @@ class Simulation:
             "population_size": population_size,
             "food_count": food_count,
             "average_energy": average_energy,
-            "average_age": average_age
+            "average_age": average_age,
+            "birth_count": self.last_birth_count,
+            "death_count": self.last_death_count
         }

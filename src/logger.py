@@ -25,7 +25,9 @@ class SimulationLogger:
         population_size: int,
         food_count: int,
         average_energy: float,
-        average_age: float
+        average_age: float,
+        birth_count: int,
+        death_count: int
     ) -> None:
         """
         1ステップ分のデータを記録
@@ -36,13 +38,17 @@ class SimulationLogger:
             food_count: 現在の食料数
             average_energy: 個体群の平均エネルギー
             average_age: 個体群の平均年齢
+            birth_count: このステップで生まれた個体数
+            death_count: このステップで死んだ個体数
         """
         self.logs.append({
             "step": step,
             "population_size": population_size,
             "food_count": food_count,
             "average_energy": average_energy,
-            "average_age": average_age
+            "average_age": average_age,
+            "birth_count": birth_count,
+            "death_count": death_count
         })
     
     def to_dataframe(self) -> pd.DataFrame:

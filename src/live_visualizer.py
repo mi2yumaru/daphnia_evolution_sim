@@ -117,7 +117,7 @@ class LiveVisualizer:
         # タイトルに統計情報を表示
         title_str = (
             f"Step: {state['step']} | "
-            f"Population: {state['population_size']} | "
+            f"Population: {state['population_size']} (B:{state['birth_count']} D:{state['death_count']}) | "
             f"Food: {state['food_count']} | "
             f"Avg Energy: {state['average_energy']:.2f} | "
             f"Avg Age: {state['average_age']:.2f}"
