@@ -119,7 +119,8 @@ class LiveVisualizer:
             f"Step: {state['step']} | "
             f"Population: {state['population_size']} | "
             f"Food: {state['food_count']} | "
-            f"Avg Energy: {state['average_energy']:.2f}"
+            f"Avg Energy: {state['average_energy']:.2f} | "
+            f"Avg Age: {state['average_age']:.2f}"
         )
         self.ax.set_title(title_str, fontsize=12, pad=20)
         

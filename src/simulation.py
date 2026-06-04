@@ -134,14 +134,17 @@ class Simulation:
         
         if population_size > 0:
             average_energy = sum(org.energy for org in self.organisms) / population_size
+            average_age = sum(org.age for org in self.organisms) / population_size
         else:
             average_energy = 0.0
+            average_age = 0.0
         
         self.logger.record(
             step=self.current_step,
             population_size=population_size,
             food_count=food_count,
-            average_energy=average_energy
+            average_energy=average_energy,
+            average_age=average_age
         )
         
         self.current_step += 1
@@ -196,8 +199,10 @@ class Simulation:
         
         if population_size > 0:
             average_energy = sum(organism_energies) / population_size
+            average_age = sum(org.age for org in self.organisms) / population_size
         else:
             average_energy = 0.0
+            average_age = 0.0
         
         return {
             "step": self.current_step,
@@ -207,5 +212,6 @@ class Simulation:
             "food_positions": food_positions,
             "population_size": population_size,
             "food_count": food_count,
-            "average_energy": average_energy
+            "average_energy": average_energy,
+            "average_age": average_age
         }
