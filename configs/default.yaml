@@ -24,7 +24,7 @@ organism:
   reproduction_cost: 10
   offspring_energy: 5
   max_age: 200
-  move_type: "moore"
+  move_type: "von_neumann"  # moore(8) or von_neumann(4)
 
 genetics:
   genome_length: 20
@@ -42,5 +42,5 @@ visualization:
   show_organisms: true
   save_animation: false
   animation_path: "results/simulation.gif"
-  save_video: true
+  save_video: false
   video_path: "results/simulation.mp4"
