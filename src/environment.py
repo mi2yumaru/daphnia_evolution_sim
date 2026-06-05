@@ -81,17 +81,33 @@ class Environment:
         Args:
             rate: 食料再生成率（0.0～1.0）
         """
-        # 再生成する食料数を計算
-        num_to_add = int(self.width * self.height * rate)
-        
-        for _ in range(num_to_add):
-            # 既に食料がない場所にランダムに配置
-            while True:
-                x = np.random.randint(0, self.width)
-                y = np.random.randint(0, self.height)
-                if (x, y) not in self.food:
-                    self.food.add((x, y))
-                    break
+        if rate <= 0.0:
+            return
+
+        total_cells = self.width * self.height
+        num_to_add = int(total_cells * rate)
+
+        if num_to_add <= 0:
+            return
+
+        # 追加できる空きセルだけを対象にする
+        empty_cells = [
+            (x, y)
+            for x in range(self.width)
+            for y in range(self.height)
+            if (x, y) not in self.food
+        ]
+
+        if not empty_cells:
+            return
+
+        num_to_add = min(num_to_add, len(empty_cells))
+        chosen_positions = np.random.choice(
+            len(empty_cells), size=num_to_add, replace=False
+        )
+
+        for idx in chosen_positions:
+            self.food.add(empty_cells[idx])
     
     def food_count(self) -> int:
         """
