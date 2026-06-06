@@ -7,6 +7,7 @@ simulation:
   average_age_plot: "results/average_age.png"
   birth_count_plot: "results/birth_count.png"
   death_count_plot: "results/death_count.png"
+  behavior_traits_plot: "results/behavior_traits.png"
 
 environment:
   width: 100
@@ -14,6 +15,11 @@ environment:
   initial_food_count: 500
   food_respawn_rate: 0.02
   food_energy: 5
+
+behavior:
+  low_energy_threshold_ratio: 0.5
+  food_detection_range: 1
+  site_memory_steps: 20
 
 organism:
   initial_population: 100

@@ -13,7 +13,8 @@ from visualizer import (
     plot_average_energy,
     plot_average_age,
     plot_birth_count,
-    plot_death_count
+    plot_death_count,
+    plot_behavior_traits
 )
 from live_visualizer import run_live_visualization
 
@@ -108,6 +109,10 @@ def main() -> None:
     death_plot_path = project_root / config["simulation"].get("death_count_plot", "results/death_count.png")
     plot_death_count(df, str(death_plot_path))
     print(f"死亡数グラフを保存しました: {death_plot_path}")
+    
+    behavior_traits_plot_path = project_root / config["simulation"].get("behavior_traits_plot", "results/behavior_traits.png")
+    plot_behavior_traits(df, str(behavior_traits_plot_path))
+    print(f"行動戦略グラフを保存しました: {behavior_traits_plot_path}")
     
     # 最終統計情報を表示
     print("\n=== シミュレーション完了 ===")

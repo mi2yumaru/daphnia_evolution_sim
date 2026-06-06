@@ -56,6 +56,9 @@ class Simulation:
         # ロガーの初期化
         self.logger = SimulationLogger()
         
+        # 行動設定
+        self.behavior_config = config.get("behavior", {})
+        
         # ステップ数
         self.current_step = 0
         
@@ -92,18 +95,32 @@ class Simulation:
         # 2-5. 個体の行動を処理
         new_offspring: List[Organism] = []
         
+        behavior_settings = {
+            "low_energy_threshold_ratio": self.behavior_config.get("low_energy_threshold_ratio", 0.5),
+            "site_memory_steps": self.behavior_config.get("site_memory_steps", 20),
+            "current_step": self.current_step
+        }
+
         for organism in self.organisms:
+            low_energy_threshold = org_config["reproduction_threshold"] * behavior_settings["low_energy_threshold_ratio"]
+            low_energy = organism.energy < low_energy_threshold
+
             # 2. 移動させる
             organism.move(
                 env_config["width"],
                 env_config["height"],
-                org_config["move_type"]
+                org_config["move_type"],
+                self.environment,
+                low_energy,
+                behavior_settings
             )
             
             # 3. 移動先に餌があれば食べる
             if self.environment.has_food(organism.x, organism.y):
                 organism.eat(env_config["food_energy"])
                 self.environment.remove_food(organism.x, organism.y)
+                organism.last_food_position = (organism.x, organism.y)
+                organism.last_food_step = self.current_step
             
             # 4. エネルギーを消費する
             organism.consume_energy(
@@ -146,9 +163,17 @@ class Simulation:
         if population_size > 0:
             average_energy = sum(org.energy for org in self.organisms) / population_size
             average_age = sum(org.age for org in self.organisms) / population_size
+            average_exploration_tendency = sum(org.phenotype["exploration_tendency"] for org in self.organisms) / population_size
+            average_site_fidelity = sum(org.phenotype["site_fidelity"] for org in self.organisms) / population_size
+            average_risk_tolerance = sum(org.phenotype["risk_tolerance"] for org in self.organisms) / population_size
+            average_reproduction_timing = sum(org.phenotype["reproduction_timing"] for org in self.organisms) / population_size
         else:
             average_energy = 0.0
             average_age = 0.0
+            average_exploration_tendency = 0.0
+            average_site_fidelity = 0.0
+            average_risk_tolerance = 0.0
+            average_reproduction_timing = 0.0
         
         self.logger.record(
             step=self.current_step,
@@ -157,7 +182,11 @@ class Simulation:
             average_energy=average_energy,
             average_age=average_age,
             birth_count=birth_count,
-            death_count=death_count
+            death_count=death_count,
+            average_exploration_tendency=average_exploration_tendency,
+            average_site_fidelity=average_site_fidelity,
+            average_risk_tolerance=average_risk_tolerance,
+            average_reproduction_timing=average_reproduction_timing
         )
         
         # 前ステップの生死情報を更新
@@ -226,6 +255,7 @@ class Simulation:
             "organism_positions": organism_positions,
             "organism_energies": organism_energies,
             "organism_states": organism_states,
+            "organism_phenotypes": [org.phenotype for org in self.organisms],
             "food_positions": food_positions,
             "population_size": population_size,
             "food_count": food_count,

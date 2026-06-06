@@ -101,3 +101,27 @@ def plot_death_count(df: pd.DataFrame, output_path: str) -> None:
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
+
+
+def plot_behavior_traits(df: pd.DataFrame, output_path: str) -> None:
+    """
+    行動戦略 phenotype の平均値推移を1枚にまとめて保存
+    
+    Args:
+        df: ログデータを持つDataFrame
+        output_path: 保存先のファイルパス
+    """
+    plt.figure(figsize=(10, 6))
+    plt.plot(df["step"], df["average_exploration_tendency"], linewidth=2, label="Exploration Tendency")
+    plt.plot(df["step"], df["average_site_fidelity"], linewidth=2, label="Site Fidelity")
+    plt.plot(df["step"], df["average_risk_tolerance"], linewidth=2, label="Risk Tolerance")
+    plt.plot(df["step"], df["average_reproduction_timing"], linewidth=2, label="Reproduction Timing")
+    plt.title("Average Behavior Traits Over Time")
+    plt.xlabel("Step")
+    plt.ylabel("Trait Value")
+    plt.ylim(0, 1.0)
+    plt.legend(loc="upper right")
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()

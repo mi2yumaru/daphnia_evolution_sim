@@ -27,7 +27,11 @@ class SimulationLogger:
         average_energy: float,
         average_age: float,
         birth_count: int,
-        death_count: int
+        death_count: int,
+        average_exploration_tendency: float,
+        average_site_fidelity: float,
+        average_risk_tolerance: float,
+        average_reproduction_timing: float
     ) -> None:
         """
         1ステップ分のデータを記録
@@ -48,7 +52,11 @@ class SimulationLogger:
             "average_energy": average_energy,
             "average_age": average_age,
             "birth_count": birth_count,
-            "death_count": death_count
+            "death_count": death_count,
+            "average_exploration_tendency": average_exploration_tendency,
+            "average_site_fidelity": average_site_fidelity,
+            "average_risk_tolerance": average_risk_tolerance,
+            "average_reproduction_timing": average_reproduction_timing
         })
     
     def to_dataframe(self) -> pd.DataFrame:

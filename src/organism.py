@@ -5,7 +5,7 @@ organism.py - 個体の定義
 移動、摂食、繁殖、死亡判定などのメソッドを提供します。
 """
 
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Dict, Any
 import numpy as np
 
 
@@ -49,8 +49,40 @@ class Organism:
             self.genome: np.ndarray = np.random.randint(0, 2, size=genome_length)
         else:
             self.genome: np.ndarray = genome.copy()
+
+        self.phenotype: Dict[str, float] = self.calculate_phenotype()
+        self.last_food_position: Optional[Tuple[int, int]] = None
+        self.last_food_step: Optional[int] = None
     
-    def move(self, width: int, height: int, move_type: str = "moore") -> None:
+    def calculate_phenotype(self) -> Dict[str, float]:
+        """ゲノムから phenotype を計算する"""
+        phenotypes = {}
+        labels = [
+            "exploration_tendency",
+            "site_fidelity",
+            "risk_tolerance",
+            "reproduction_timing"
+        ]
+
+        for idx, label in enumerate(labels):
+            start = idx * 5
+            segment = self.genome[start:start + 5].astype(int)
+            value = 0
+            for bit in segment:
+                value = (value << 1) | int(bit)
+            phenotypes[label] = value / 31.0
+
+        return phenotypes
+
+    def move(
+        self,
+        width: int,
+        height: int,
+        move_type: str,
+        environment: Any,
+        low_energy: bool,
+        behavior_config: Dict[str, Any]
+    ) -> None:
         """
         個体を移動させる
         
@@ -60,14 +92,12 @@ class Organism:
             move_type: "moore" (8方向) または "von_neumann" (4方向)
         """
         if move_type == "moore":
-            # 周囲8方向
             directions = [
                 (-1, -1), (-1, 0), (-1, 1),
                 (0, -1),           (0, 1),
                 (1, -1),  (1, 0),  (1, 1)
             ]
         elif move_type == "von_neumann":
-            # 上下左右4方向
             directions = [
                 (-1, 0),
                 (0, -1), (0, 1),
@@ -75,15 +105,81 @@ class Organism:
             ]
         else:
             raise ValueError(f"Unknown move_type: {move_type}")
-        
-        # ランダムに1方向を選択
-        dy, dx = directions[np.random.randint(len(directions))]
-        new_x = self.x + dx
-        new_y = self.y + dy
-        
-        # グリッド境界内に留まる
-        self.x = max(0, min(new_x, width - 1))
-        self.y = max(0, min(new_y, height - 1))
+
+        base_move_prob = self.phenotype["exploration_tendency"]
+        if low_energy:
+            risk = self.phenotype["risk_tolerance"]
+            base_move_prob *= 0.4 + 0.6 * risk
+
+        # 周囲に餌が見つかるかどうかを判定
+        detection_range = behavior_config.get("food_detection_range", 1)
+        food_neighbors = []
+        for dx, dy in directions:
+            for dist in range(1, detection_range + 1):
+                target_x = self.x + dx * dist
+                target_y = self.y + dy * dist
+                if 0 <= target_x < width and 0 <= target_y < height:
+                    if environment.has_food(target_x, target_y):
+                        food_neighbors.append((dx, dy))
+                        break
+                else:
+                    break
+
+        # last_food_position が有効かどうかを判定
+        memory_steps = behavior_config.get("site_memory_steps", 20)
+        use_site_memory = (
+            self.last_food_position is not None
+            and self.last_food_step is not None
+            and self.last_food_step + memory_steps >= behavior_config.get("current_step", 0)
+        )
+
+        stay_probability = 1.0 - base_move_prob
+        if stay_probability < 0.0:
+            stay_probability = 0.0
+
+        if food_neighbors:
+            # 餌が存在する場合は餌方向にバイアスをかける
+            candidates = directions.copy()
+            weights = []
+            for dx, dy in candidates:
+                weight = 1.0
+                if (dx, dy) in food_neighbors:
+                    weight += 4.0
+                if use_site_memory and self.last_food_position is not None:
+                    target_x = self.x + dx
+                    target_y = self.y + dy
+                    distance_before = abs(self.last_food_position[0] - self.x) + abs(self.last_food_position[1] - self.y)
+                    distance_after = abs(self.last_food_position[0] - target_x) + abs(self.last_food_position[1] - target_y)
+                    if distance_after < distance_before:
+                        weight += 2.0 * self.phenotype["site_fidelity"]
+                weights.append(weight)
+            chosen = np.random.choice(len(candidates), p=np.array(weights) / np.sum(weights))
+            dx, dy = candidates[chosen]
+        else:
+            if np.random.random() >= base_move_prob:
+                dx, dy = 0, 0
+            else:
+                candidates = directions.copy()
+                weights = [1.0] * len(candidates)
+                if use_site_memory and self.last_food_position is not None:
+                    for i, (dx, dy) in enumerate(candidates):
+                        target_x = self.x + dx
+                        target_y = self.y + dy
+                        if 0 <= target_x < width and 0 <= target_y < height:
+                            distance_before = abs(self.last_food_position[0] - self.x) + abs(self.last_food_position[1] - self.y)
+                            distance_after = abs(self.last_food_position[0] - target_x) + abs(self.last_food_position[1] - target_y)
+                            if distance_after < distance_before:
+                                weights[i] += self.phenotype["site_fidelity"] * 2.0
+                weights = np.array(weights)
+                if weights.sum() == 0:
+                    choice = np.random.randint(len(candidates))
+                else:
+                    weights = weights / weights.sum()
+                    choice = np.random.choice(len(candidates), p=weights)
+                dx, dy = candidates[choice]
+
+        self.x = max(0, min(self.x + dx, width - 1))
+        self.y = max(0, min(self.y + dy, height - 1))
     
     def consume_energy(self, move_cost: float, living_cost: float) -> None:
         """
@@ -104,17 +200,22 @@ class Organism:
         """
         self.energy += food_energy
     
-    def can_reproduce(self, threshold: float) -> bool:
+    def can_reproduce(self, base_threshold: float) -> bool:
         """
         繁殖可能な状態か判定
         
         Args:
-            threshold: 繁殖に必要なエネルギー値
+            base_threshold: 基本の繁殖閾値
         
         Returns:
             bool: 繁殖可能ならTrue
         """
-        return self.energy >= threshold
+        effective_threshold = base_threshold * (1.0 + self.phenotype["reproduction_timing"])
+        return self.energy >= effective_threshold
+
+    def get_effective_reproduction_threshold(self, base_threshold: float) -> float:
+        """実際に必要な繁殖エネルギー閾値を返す"""
+        return base_threshold * (1.0 + self.phenotype["reproduction_timing"])
     
     def reproduce(
         self,

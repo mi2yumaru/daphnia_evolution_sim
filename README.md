@@ -18,8 +18,23 @@
   - 加齢と死亡
 - **エネルギー管理**: 移動・生活・繁殖のコストを設定可能
 - **ゲノム管理**: 各個体は0/1配列を持ち、変異率を設定可能
-- **ログ機能**: 各ステップの個体数、食料数、平均エネルギーを記録
-- **可視化**: 個体数と平均エネルギーのグラフを生成
+- **ログ機能**: 各ステップの個体数、食料数、平均エネルギー、行動戦略 phenotype の平均値を記録
+- **可視化**: 個体数、平均エネルギー、平均年齢、出生・死亡、行動戦略の推移をグラフ出力
+
+## 行動戦略 phenotype について
+
+- 各個体は genome の 20 ビットを 5 ビットずつ 4 つに分割し、以下の phenotype を計算します。
+  - `exploration_tendency`
+  - `site_fidelity`
+  - `risk_tolerance`
+  - `reproduction_timing`
+- 各 5 ビットは2進数として解釈され、0〜31 の整数値を 31 で割って 0.0〜1.0 に正規化します。
+- したがって、`00000` は `0.0`、`11111` は `1.0` になります。
+- この phenotype は「高いほど必ず有利」ではなく、例えば環境やエネルギー状態によって移動や繁殖の挙動が異なります。
+- `exploration_tendency` が高い個体は、周囲に餌がないときでも積極的に移動します。低い個体は留まる傾向があります。
+- `site_fidelity` が高い個体は、最後に餌を食べた場所の周辺にとどまりやすくなります。低い個体は餌場に固執しません。
+- `risk_tolerance` が高い個体は低エネルギーでも探索を続けます。低い個体はエネルギーが少ないと移動を控えます。
+- `reproduction_timing` が低い個体は閾値を超えれば早めに繁殖し、高い個体はより多くエネルギーを貯めてから繁殖します。
 
 ## 将来的に追加予定の要素
 
@@ -103,9 +118,10 @@ python src/main.py --help
 
 実行後、以下が `results/` ディレクトリに生成されます：
 
-- **log.csv**: 各ステップの統計情報（ステップ数、個体数、食料数、平均エネルギー）
+- **log.csv**: 各ステップの統計情報（ステップ数、個体数、食料数、平均エネルギー、平均行動戦略値）
 - **population.png**: 個体数の時系列グラフ
 - **average_energy.png**: 平均エネルギーの時系列グラフ
+- **behavior_traits.png**: 行動戦略 phenotype の平均推移グラフ
 - **simulation.mp4**: リアルタイム可視化モードで保存された MP4 動画（`visualization.save_video` が有効な場合）
 
 ### 設定のカスタマイズ
@@ -119,6 +135,7 @@ simulation:
   output_csv: "results/log.csv"
   population_plot: "results/population.png"
   energy_plot: "results/average_energy.png"
+  behavior_traits_plot: "results/behavior_traits.png"
 
 environment:
   width: 50                # グリッド幅
@@ -126,6 +143,11 @@ environment:
   initial_food_count: 500  # 初期食料数
   food_respawn_rate: 0.02  # 毎ステップの食料再生成率
   food_energy: 5           # 食料1個のエネルギー値
+
+behavior:
+  low_energy_threshold_ratio: 0.5  # 低エネルギー時に移動を控える基準（reproduction_threshold に対する比率）
+  food_detection_range: 1         # 周囲何マス以内の食料を検出するか
+  site_memory_steps: 20           # 最後に餌を食べた場所を記憶するステップ数
 
 organism:
   initial_population: 100  # 初期個体数
