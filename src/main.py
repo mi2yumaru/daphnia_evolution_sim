@@ -7,16 +7,29 @@ main.py - シミュレーション実行エントリーポイント
 import sys
 from pathlib import Path
 import yaml
-from simulation import Simulation
-from visualizer import (
-    plot_population,
-    plot_average_energy,
-    plot_average_age,
-    plot_birth_count,
-    plot_death_count,
-    plot_behavior_traits
-)
-from live_visualizer import run_live_visualization
+try:
+    from src.simulation import Simulation
+    from src.visualizer import (
+        plot_population,
+        plot_average_energy,
+        plot_average_age,
+        plot_birth_count,
+        plot_death_count,
+        plot_behavior_traits,
+    )
+    from src.live_visualizer import run_live_visualization
+except Exception:
+    # running as a script (python src/main.py) — fall back to top-level imports
+    from simulation import Simulation
+    from visualizer import (
+        plot_population,
+        plot_average_energy,
+        plot_average_age,
+        plot_birth_count,
+        plot_death_count,
+        plot_behavior_traits,
+    )
+    from live_visualizer import run_live_visualization
 
 
 def print_usage():

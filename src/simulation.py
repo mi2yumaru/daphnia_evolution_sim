@@ -6,9 +6,16 @@ Simulation クラスが各ステップでの環境、個体群、食料の更新
 
 from typing import List, Dict, Any
 import numpy as np
-from organism import Organism
-from environment import Environment
-from logger import SimulationLogger
+try:
+    from .organism import Organism
+    from .environment import Environment
+    from .logger import SimulationLogger
+except Exception:
+    # when running as a script (python src/main.py) the package-relative imports
+    # fail; fall back to top-level module imports
+    from organism import Organism
+    from environment import Environment
+    from logger import SimulationLogger
 
 
 class Simulation:
