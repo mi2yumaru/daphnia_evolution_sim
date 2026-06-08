@@ -37,7 +37,14 @@ class Simulation:
         np.random.seed(sim_config["random_seed"])
         
         # 環境の初期化
-        self.environment = Environment(env_config["width"], env_config["height"])
+        self.environment = Environment(
+            env_config["width"],
+            env_config["height"],
+            respawn_mode=env_config.get("mode", "random"),
+            patch_count=env_config.get("patch_count", 3),
+            patch_radius=env_config.get("patch_radius", 5),
+            patch_density=env_config.get("patch_density", 0.8)
+        )
         self.environment.init_food(env_config["initial_food_count"])
         
         # 個体群の初期化
