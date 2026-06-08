@@ -97,30 +97,11 @@ class LiveVisualizer:
         if organism_positions:
             org_x = [pos[0] for pos in organism_positions]
             org_y = [pos[1] for pos in organism_positions]
-            
-            # 通常の個体（青色）
-            normal_indices = [
-                i for i, s in enumerate(organism_states) if s == "normal"
-            ]
-            if normal_indices:
-                normal_x = [org_x[i] for i in normal_indices]
-                normal_y = [org_y[i] for i in normal_indices]
-                self.ax.scatter(
-                    normal_x, normal_y,
-                    c="blue", s=50, alpha=0.7, marker="o", label="Organism"
-                )
-            
-            # 繁殖可能な個体（赤色）
-            repro_indices = [
-                i for i, s in enumerate(organism_states) if s == "can_reproduce"
-            ]
-            if repro_indices:
-                repro_x = [org_x[i] for i in repro_indices]
-                repro_y = [org_y[i] for i in repro_indices]
-                self.ax.scatter(
-                    repro_x, repro_y,
-                    c="red", s=50, alpha=0.7, marker="o", label="Ready to Reproduce"
-                )
+            # 全ての個体を青で統一して描画（繁殖可能フラグで色分けしない）
+            self.ax.scatter(
+                org_x, org_y,
+                c="blue", s=50, alpha=0.7, marker="o", label="Organism"
+            )
         
         # タイトルに統計情報を表示
         title_str = (
