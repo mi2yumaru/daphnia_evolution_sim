@@ -142,9 +142,13 @@ environment:
   height: 50               # グリッド高さ
   mode: "random"          # 食料再生成モード（"random" または "patch"）
   patch_count: 4           # パッチ環境の数（mode: patch の場合）
+  patch_layout: "radial"  # "random" | "radial" | "spread"
   patch_radius: 5          # パッチの半径（mode: patch の場合）
   patch_density: 0.8       # パッチ内の再生成密度（mode: patch の場合）
   outside_respawn_fraction: 0.05  # パッチ外の低確率リポップ割合（mode: patch の場合）
+  patch_radial_fraction: 0.25    # 'radial' レイアウト時の中心円の半径割合（短辺に対する比率）
+  patch_spread_use_corners: true # 'spread' レイアウトで角(0,0),(0,H),(W,0),(W,H)を距離計算に含めるか
+  patch_spread_step: 0          # spread レイアウトでの探索候補間隔(0=自動)
   initial_food_count: 500  # 初期食料数
   food_respawn_rate: 0.02  # 毎ステップの食料再生成率
   food_energy: 5           # 食料1個のエネルギー値
