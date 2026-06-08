@@ -41,9 +41,15 @@ class Simulation:
             env_config["width"],
             env_config["height"],
             respawn_mode=env_config.get("mode", "random"),
-            patch_count=env_config.get("patch_count", 3),
+            patch_count=env_config.get("patch_count", 4),
             patch_radius=env_config.get("patch_radius", 5),
-            patch_density=env_config.get("patch_density", 0.8)
+            patch_density=env_config.get("patch_density", 0.8),
+            outside_respawn_fraction=env_config.get("outside_respawn_fraction", 0.05),
+            patch_layout=env_config.get("patch_layout", "random"),
+            patch_centers_config=env_config.get("patch_centers", None),
+            patch_radial_fraction=env_config.get("patch_radial_fraction", 0.25),
+            patch_spread_use_corners=env_config.get("patch_spread_use_corners", True),
+            patch_spread_step=env_config.get("patch_spread_step", 0)
         )
         self.environment.init_food(env_config["initial_food_count"])
         

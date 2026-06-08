@@ -141,9 +141,10 @@ environment:
   width: 50                # グリッド幅
   height: 50               # グリッド高さ
   mode: "random"          # 食料再生成モード（"random" または "patch"）
-  patch_count: 3           # パッチ環境の数（mode: patch の場合）
+  patch_count: 4           # パッチ環境の数（mode: patch の場合）
   patch_radius: 5          # パッチの半径（mode: patch の場合）
   patch_density: 0.8       # パッチ内の再生成密度（mode: patch の場合）
+  outside_respawn_fraction: 0.05  # パッチ外の低確率リポップ割合（mode: patch の場合）
   initial_food_count: 500  # 初期食料数
   food_respawn_rate: 0.02  # 毎ステップの食料再生成率
   food_energy: 5           # 食料1個のエネルギー値
