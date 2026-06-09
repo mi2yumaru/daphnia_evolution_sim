@@ -126,7 +126,7 @@ class Simulation:
             low_energy = organism.energy < low_energy_threshold
 
             # 2. 移動させる
-            organism.move(
+            moved = organism.move(
                 env_config["width"],
                 env_config["height"],
                 org_config["move_type"],
@@ -143,8 +143,11 @@ class Simulation:
                 organism.last_food_step = self.current_step
             
             # 4. エネルギーを消費する
+            # living_cost は毎ステップ必ず消費し、move_cost は実際に移動した場合のみ消費する
+            move_cost = org_config["move_cost"] if moved else 0.0
+            
             organism.consume_energy(
-                org_config["move_cost"],
+                move_cost,
                 org_config["living_cost"]
             )
             

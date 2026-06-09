@@ -12,9 +12,9 @@ simulation:
 environment:
   width: 100
   height: 100
-  mode: "patch"            # 食料再生成モード: "random" または "patch"
+  mode: "random"            # 食料再生成モード: "random" または "patch"
   patch_count: 4
-  patch_layout: "spread"    # "random" | "radial" | "spread"
+  patch_layout: "random"    # "random" | "radial" | "spread"
   patch_radius: 5
   patch_density: 0.8
   outside_respawn_fraction: 0.05  # パッチ外での低確率リポップ割合（patch モード時）

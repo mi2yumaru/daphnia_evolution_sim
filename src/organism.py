@@ -82,15 +82,22 @@ class Organism:
         environment: Any,
         low_energy: bool,
         behavior_config: Dict[str, Any]
-    ) -> None:
+    ) -> bool:
         """
         個体を移動させる
         
+        Returns:
+        bool: 実際に座標が変化した場合は True、移動しなかった場合は False
+
         Args:
             width: グリッドの幅
             height: グリッドの高さ
             move_type: "moore" (8方向) または "von_neumann" (4方向)
         """
+
+        old_x = self.x
+        old_y = self.y
+
         if move_type == "moore":
             directions = [
                 (-1, -1), (-1, 0), (-1, 1),
@@ -178,8 +185,13 @@ class Organism:
                     choice = np.random.choice(len(candidates), p=weights)
                 dx, dy = candidates[choice]
 
-        self.x = max(0, min(self.x + dx, width - 1))
-        self.y = max(0, min(self.y + dy, height - 1))
+        new_x = max(0, min(self.x + dx, width - 1))
+        new_y = max(0, min(self.y + dy, height - 1))
+
+        self.x = new_x
+        self.y = new_y
+
+        return(self.x != old_x) or (self.y != old_y)
     
     def consume_energy(self, move_cost: float, living_cost: float) -> None:
         """
