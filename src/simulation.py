@@ -114,6 +114,7 @@ class Simulation:
         
         # 2-5. 個体の行動を処理
         new_offspring: List[Organism] = []
+        move_count = 0
         
         behavior_settings = {
             "low_energy_threshold_ratio": self.behavior_config.get("low_energy_threshold_ratio", 0.5),
@@ -134,7 +135,9 @@ class Simulation:
                 low_energy,
                 behavior_settings
             )
-            
+            if moved:
+                move_count += 1
+
             # 3. 移動先に餌があれば食べる
             if self.environment.has_food(organism.x, organism.y):
                 organism.eat(env_config["food_energy"])
@@ -182,6 +185,8 @@ class Simulation:
         # 9. 統計情報をログに記録する
         population_size = len(self.organisms)
         food_count = self.environment.food_count()
+
+        move_rate = move_count / population_before if population_before > 0 else 0.0
         
         if population_size > 0:
             average_energy = sum(org.energy for org in self.organisms) / population_size
@@ -206,6 +211,8 @@ class Simulation:
             average_age=average_age,
             birth_count=birth_count,
             death_count=death_count,
+            move_count=move_count,
+            move_rate=move_rate,
             average_exploration_tendency=average_exploration_tendency,
             average_site_fidelity=average_site_fidelity,
             average_risk_tolerance=average_risk_tolerance,

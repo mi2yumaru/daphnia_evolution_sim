@@ -28,6 +28,8 @@ class SimulationLogger:
         average_age: float,
         birth_count: int,
         death_count: int,
+        move_count: int,
+        move_rate: float,
         average_exploration_tendency: float,
         average_site_fidelity: float,
         average_risk_tolerance: float,
@@ -44,6 +46,8 @@ class SimulationLogger:
             average_age: 個体群の平均年齢
             birth_count: このステップで生まれた個体数
             death_count: このステップで死んだ個体数
+            move_count: このステップで移動した個体数
+            move_rate: 移動率
         """
         self.logs.append({
             "step": step,
@@ -53,6 +57,8 @@ class SimulationLogger:
             "average_age": average_age,
             "birth_count": birth_count,
             "death_count": death_count,
+            "move_count": move_count,
+            "move_rate": move_rate,
             "average_exploration_tendency": average_exploration_tendency,
             "average_site_fidelity": average_site_fidelity,
             "average_risk_tolerance": average_risk_tolerance,

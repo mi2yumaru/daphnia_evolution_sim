@@ -16,6 +16,7 @@ try:
         plot_birth_count,
         plot_death_count,
         plot_behavior_traits,
+        plot_move_rate,
     )
     from src.live_visualizer import run_live_visualization
 except Exception:
@@ -28,6 +29,7 @@ except Exception:
         plot_birth_count,
         plot_death_count,
         plot_behavior_traits,
+        plot_move_rate
     )
     from live_visualizer import run_live_visualization
 
@@ -127,6 +129,10 @@ def main() -> None:
     plot_behavior_traits(df, str(behavior_traits_plot_path))
     print(f"行動戦略グラフを保存しました: {behavior_traits_plot_path}")
     
+    move_rate_plot_path = project_root / config["simulation"].get("move_rate_plot", "results/move_rate.png")
+    plot_move_rate(df, str(move_rate_plot_path))
+    print(f"移動率グラフを保存しました: {move_rate_plot_path}")
+
     # 最終統計情報を表示
     print("\n=== シミュレーション完了 ===")
     print(f"最終個体数: {len(sim.organisms)}")

@@ -8,6 +8,7 @@ simulation:
   birth_count_plot: "results/birth_count.png"
   death_count_plot: "results/death_count.png"
   behavior_traits_plot: "results/behavior_traits.png"
+  move_rate_plot: "results/move_rate.png"
 
 environment:
   width: 100
