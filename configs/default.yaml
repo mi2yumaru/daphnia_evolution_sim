@@ -9,6 +9,7 @@ simulation:
   death_count_plot: "results/death_count.png"
   behavior_traits_plot: "results/behavior_traits.png"
   move_rate_plot: "results/move_rate.png"
+  eat_rate_plot: "results/eat_rate.png"
 
 environment:
   width: 100

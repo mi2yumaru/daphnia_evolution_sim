@@ -115,6 +115,7 @@ class Simulation:
         # 2-5. 個体の行動を処理
         new_offspring: List[Organism] = []
         move_count = 0
+        eat_count = 0
         
         behavior_settings = {
             "low_energy_threshold_ratio": self.behavior_config.get("low_energy_threshold_ratio", 0.5),
@@ -144,6 +145,7 @@ class Simulation:
                 self.environment.remove_food(organism.x, organism.y)
                 organism.last_food_position = (organism.x, organism.y)
                 organism.last_food_step = self.current_step
+                eat_count += 1
             
             # 4. エネルギーを消費する
             # living_cost は毎ステップ必ず消費し、move_cost は実際に移動した場合のみ消費する
@@ -187,6 +189,7 @@ class Simulation:
         food_count = self.environment.food_count()
 
         move_rate = move_count / population_before if population_before > 0 else 0.0
+        eat_rate = eat_count / population_before if population_before > 0 else 0.0
         
         if population_size > 0:
             average_energy = sum(org.energy for org in self.organisms) / population_size
@@ -213,6 +216,8 @@ class Simulation:
             death_count=death_count,
             move_count=move_count,
             move_rate=move_rate,
+            eat_count=eat_count,
+            eat_rate=eat_rate,
             average_exploration_tendency=average_exploration_tendency,
             average_site_fidelity=average_site_fidelity,
             average_risk_tolerance=average_risk_tolerance,

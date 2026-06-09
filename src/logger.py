@@ -30,6 +30,8 @@ class SimulationLogger:
         death_count: int,
         move_count: int,
         move_rate: float,
+        eat_count: int,
+        eat_rate: float,
         average_exploration_tendency: float,
         average_site_fidelity: float,
         average_risk_tolerance: float,
@@ -48,6 +50,8 @@ class SimulationLogger:
             death_count: このステップで死んだ個体数
             move_count: このステップで移動した個体数
             move_rate: 移動率
+            eat_count: このステップで餌を食べた個体数
+            eat_rate: 摂食率
         """
         self.logs.append({
             "step": step,
@@ -59,6 +63,8 @@ class SimulationLogger:
             "death_count": death_count,
             "move_count": move_count,
             "move_rate": move_rate,
+            "eat_count": eat_count,
+            "eat_rate": eat_rate,
             "average_exploration_tendency": average_exploration_tendency,
             "average_site_fidelity": average_site_fidelity,
             "average_risk_tolerance": average_risk_tolerance,

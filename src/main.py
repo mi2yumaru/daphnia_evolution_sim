@@ -17,6 +17,7 @@ try:
         plot_death_count,
         plot_behavior_traits,
         plot_move_rate,
+        plot_eat_rate
     )
     from src.live_visualizer import run_live_visualization
 except Exception:
@@ -132,6 +133,10 @@ def main() -> None:
     move_rate_plot_path = project_root / config["simulation"].get("move_rate_plot", "results/move_rate.png")
     plot_move_rate(df, str(move_rate_plot_path))
     print(f"移動率グラフを保存しました: {move_rate_plot_path}")
+
+    eat_rate_plot_path = project_root / config["simulation"].get("eat_rate_plot", "results/eat_rate.png")
+    plot_eat_rate(df, str(eat_rate_plot_path))
+    print(f"摂食率グラフを保存しました: {eat_rate_plot_path}")
 
     # 最終統計情報を表示
     print("\n=== シミュレーション完了 ===")

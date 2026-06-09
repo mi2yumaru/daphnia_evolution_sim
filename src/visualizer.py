@@ -144,3 +144,22 @@ def plot_move_rate(df: pd.DataFrame, output_path: str) -> None:
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
+    
+def plot_eat_rate(df: pd.DataFrame, output_path: str) -> None:
+    """
+    摂食率の時系列グラフを生成して保存する。
+
+    Args:
+        df: ログデータを持つDataFrame
+        output_path: 保存先のファイルパス
+    """
+    plt.figure(figsize=(10, 6))
+    plt.plot(df["step"], df["eat_rate"], linewidth=2)
+    plt.title("Eat Rate Over Time")
+    plt.xlabel("Step")
+    plt.ylabel("Eat Rate")
+    plt.ylim(0, 1.0)
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()
