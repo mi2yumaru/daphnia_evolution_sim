@@ -30,7 +30,8 @@ except Exception:
         plot_birth_count,
         plot_death_count,
         plot_behavior_traits,
-        plot_move_rate
+        plot_move_rate,
+        plot_eat_rate
     )
     from live_visualizer import run_live_visualization
 
