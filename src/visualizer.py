@@ -112,13 +112,86 @@ def plot_behavior_traits(df: pd.DataFrame, output_path: str) -> None:
         output_path: 保存先のファイルパス
     """
     plt.figure(figsize=(10, 6))
-    plt.plot(df["step"], df["average_exploration_tendency"], linewidth=2, label="Exploration Tendency")
-    plt.plot(df["step"], df["average_site_fidelity"], linewidth=2, label="Site Fidelity")
-    plt.plot(df["step"], df["average_risk_tolerance"], linewidth=2, label="Risk Tolerance")
-    plt.plot(df["step"], df["average_reproduction_timing"], linewidth=2, label="Reproduction Timing")
+    plt.plot(
+        df["step"],
+        df["average_exploration_tendency"],
+        label="Exploration Tendency",
+        linewidth=2
+    )
+
+    plt.plot(
+        df["step"],
+        df["average_site_fidelity"],
+        label="Site Fidelity",
+        linewidth=2
+    )
+
+    plt.plot(
+        df["step"],
+        df["average_risk_tolerance"],
+        label="Risk Tolerance",
+        linewidth=2
+    )
+
+    plt.plot(
+        df["step"],
+        df["average_reproduction_timing"],
+        label="Reproduction Timing",
+        linewidth=2
+    )
+
     plt.title("Average Behavior Traits Over Time")
     plt.xlabel("Step")
     plt.ylabel("Trait Value")
+    plt.ylim(0, 1.0)
+    plt.legend(loc="upper right")
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+
+def plot_trait_range(
+    df: pd.DataFrame,
+    output_path: str,
+    average_col: str,
+    min_col: str,
+    max_col: str,
+    title: str,
+    ylabel: str = "Trait Value"
+) -> None:
+    """
+    1つの行動特性について、平均値と最小値〜最大値の範囲を描画して保存する。
+
+    Args:
+        df: ログデータを持つDataFrame
+        output_path: 保存先のファイルパス
+        average_col: 平均値の列名
+        min_col: 最小値の列名
+        max_col: 最大値の列名
+        title: グラフタイトル
+        ylabel: y軸ラベル
+    """
+    plt.figure(figsize=(10, 6))
+
+    line, = plt.plot(
+        df["step"],
+        df[average_col],
+        linewidth=2,
+        label="Average"
+    )
+
+    plt.fill_between(
+        df["step"],
+        df[min_col],
+        df[max_col],
+        alpha=0.2,
+        color=line.get_color(),
+        label="Min-Max Range"
+    )
+
+    plt.title(title)
+    plt.xlabel("Step")
+    plt.ylabel(ylabel)
     plt.ylim(0, 1.0)
     plt.legend(loc="upper right")
     plt.grid(True, alpha=0.3)

@@ -17,7 +17,8 @@ try:
         plot_death_count,
         plot_behavior_traits,
         plot_move_rate,
-        plot_eat_rate
+        plot_eat_rate,
+        plot_trait_range,
     )
     from src.live_visualizer import run_live_visualization
 except Exception:
@@ -31,7 +32,8 @@ except Exception:
         plot_death_count,
         plot_behavior_traits,
         plot_move_rate,
-        plot_eat_rate
+        plot_eat_rate,
+        plot_trait_range,
     )
     from live_visualizer import run_live_visualization
 
@@ -131,6 +133,50 @@ def main() -> None:
     plot_behavior_traits(df, str(behavior_traits_plot_path))
     print(f"行動戦略グラフを保存しました: {behavior_traits_plot_path}")
     
+    exploration_range_plot_path = project_root / "results/exploration_tendency_range.png"
+    plot_trait_range(
+        df,
+        str(exploration_range_plot_path),
+        average_col="average_exploration_tendency",
+        min_col="min_exploration_tendency",
+        max_col="max_exploration_tendency",
+        title="Exploration Tendency Range Over Time"
+    )
+    print(f"探索傾向の範囲グラフを保存しました: {exploration_range_plot_path}")
+
+    site_fidelity_range_plot_path = project_root / "results/site_fidelity_range.png"
+    plot_trait_range(
+        df,
+        str(site_fidelity_range_plot_path),
+        average_col="average_site_fidelity",
+        min_col="min_site_fidelity",
+        max_col="max_site_fidelity",
+        title="Site Fidelity Range Over Time"
+    )
+    print(f"餌場定着傾向の範囲グラフを保存しました: {site_fidelity_range_plot_path}")
+
+    risk_tolerance_range_plot_path = project_root / "results/risk_tolerance_range.png"
+    plot_trait_range(
+        df,
+        str(risk_tolerance_range_plot_path),
+        average_col="average_risk_tolerance",
+        min_col="min_risk_tolerance",
+        max_col="max_risk_tolerance",
+        title="Risk Tolerance Range Over Time"
+    )
+    print(f"リスク許容度の範囲グラフを保存しました: {risk_tolerance_range_plot_path}")
+
+    reproduction_timing_range_plot_path = project_root / "results/reproduction_timing_range.png"
+    plot_trait_range(
+        df,
+        str(reproduction_timing_range_plot_path),
+        average_col="average_reproduction_timing",
+        min_col="min_reproduction_timing",
+        max_col="max_reproduction_timing",
+        title="Reproduction Timing Range Over Time"
+    )
+    print(f"繁殖タイミングの範囲グラフを保存しました: {reproduction_timing_range_plot_path}")
+
     move_rate_plot_path = project_root / config["simulation"].get("move_rate_plot", "results/move_rate.png")
     plot_move_rate(df, str(move_rate_plot_path))
     print(f"移動率グラフを保存しました: {move_rate_plot_path}")

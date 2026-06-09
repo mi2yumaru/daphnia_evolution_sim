@@ -194,10 +194,29 @@ class Simulation:
         if population_size > 0:
             average_energy = sum(org.energy for org in self.organisms) / population_size
             average_age = sum(org.age for org in self.organisms) / population_size
+            
+            exploration_values = [org.phenotype["exploration_tendency"] for org in self.organisms]
+            site_fidelity_values = [org.phenotype["site_fidelity"] for org in self.organisms]
+            risk_tolerance_values = [org.phenotype["risk_tolerance"] for org in self.organisms]
+            reproduction_timing_values = [org.phenotype["reproduction_timing"] for org in self.organisms]
+
             average_exploration_tendency = sum(org.phenotype["exploration_tendency"] for org in self.organisms) / population_size
             average_site_fidelity = sum(org.phenotype["site_fidelity"] for org in self.organisms) / population_size
             average_risk_tolerance = sum(org.phenotype["risk_tolerance"] for org in self.organisms) / population_size
             average_reproduction_timing = sum(org.phenotype["reproduction_timing"] for org in self.organisms) / population_size
+        
+            min_exploration_tendency = min(exploration_values)
+            max_exploration_tendency = max(exploration_values)
+
+            min_site_fidelity = min(site_fidelity_values)
+            max_site_fidelity = max(site_fidelity_values)
+
+            min_risk_tolerance = min(risk_tolerance_values)
+            max_risk_tolerance = max(risk_tolerance_values)
+
+            min_reproduction_timing = min(reproduction_timing_values)
+            max_reproduction_timing = max(reproduction_timing_values)
+        
         else:
             average_energy = 0.0
             average_age = 0.0
@@ -205,6 +224,18 @@ class Simulation:
             average_site_fidelity = 0.0
             average_risk_tolerance = 0.0
             average_reproduction_timing = 0.0
+
+            min_exploration_tendency = 0.0
+            max_exploration_tendency = 0.0
+
+            min_site_fidelity = 0.0
+            max_site_fidelity = 0.0
+
+            min_risk_tolerance = 0.0
+            max_risk_tolerance = 0.0
+
+            min_reproduction_timing = 0.0
+            max_reproduction_timing = 0.0
         
         self.logger.record(
             step=self.current_step,
@@ -219,9 +250,17 @@ class Simulation:
             eat_count=eat_count,
             eat_rate=eat_rate,
             average_exploration_tendency=average_exploration_tendency,
+            min_exploration_tendency=min_exploration_tendency,
+            max_exploration_tendency=max_exploration_tendency,
             average_site_fidelity=average_site_fidelity,
+            min_site_fidelity=min_site_fidelity,
+            max_site_fidelity=max_site_fidelity,
             average_risk_tolerance=average_risk_tolerance,
-            average_reproduction_timing=average_reproduction_timing
+            min_risk_tolerance=min_risk_tolerance,
+            max_risk_tolerance=max_risk_tolerance,
+            average_reproduction_timing=average_reproduction_timing,
+            min_reproduction_timing=min_reproduction_timing,
+            max_reproduction_timing=max_reproduction_timing
         )
         
         # 前ステップの生死情報を更新

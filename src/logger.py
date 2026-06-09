@@ -33,9 +33,17 @@ class SimulationLogger:
         eat_count: int,
         eat_rate: float,
         average_exploration_tendency: float,
+        min_exploration_tendency: float,
+        max_exploration_tendency: float,
         average_site_fidelity: float,
+        min_site_fidelity: float,
+        max_site_fidelity: float,
         average_risk_tolerance: float,
-        average_reproduction_timing: float
+        min_risk_tolerance: float,
+        max_risk_tolerance: float,
+        average_reproduction_timing: float,
+        min_reproduction_timing: float,
+        max_reproduction_timing: float
     ) -> None:
         """
         1ステップ分のデータを記録
@@ -66,9 +74,17 @@ class SimulationLogger:
             "eat_count": eat_count,
             "eat_rate": eat_rate,
             "average_exploration_tendency": average_exploration_tendency,
+            "min_exploration_tendency": min_exploration_tendency,
+            "max_exploration_tendency": max_exploration_tendency,
             "average_site_fidelity": average_site_fidelity,
+            "min_site_fidelity": min_site_fidelity,
+            "max_site_fidelity": max_site_fidelity,
             "average_risk_tolerance": average_risk_tolerance,
-            "average_reproduction_timing": average_reproduction_timing
+            "min_risk_tolerance": min_risk_tolerance,
+            "max_risk_tolerance": max_risk_tolerance,
+            "average_reproduction_timing": average_reproduction_timing,
+            "min_reproduction_timing": min_reproduction_timing,
+            "max_reproduction_timing": max_reproduction_timing
         })
     
     def to_dataframe(self) -> pd.DataFrame:
