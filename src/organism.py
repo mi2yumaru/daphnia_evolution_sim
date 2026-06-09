@@ -191,7 +191,7 @@ class Organism:
         self.x = new_x
         self.y = new_y
 
-        return(self.x != old_x) or (self.y != old_y)
+        return (self.x != old_x) or (self.y != old_y)
     
     def consume_energy(self, move_cost: float, living_cost: float) -> None:
         """
