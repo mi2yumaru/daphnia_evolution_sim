@@ -19,6 +19,7 @@ try:
         plot_move_rate,
         plot_eat_rate,
         plot_trait_range,
+        plot_behavior_trait_std,
     )
     from src.live_visualizer import run_live_visualization
 except Exception:
@@ -34,6 +35,7 @@ except Exception:
         plot_move_rate,
         plot_eat_rate,
         plot_trait_range,
+        plot_behavior_trait_std,
     )
     from live_visualizer import run_live_visualization
 
@@ -132,7 +134,11 @@ def main() -> None:
     behavior_traits_plot_path = project_root / config["simulation"].get("behavior_traits_plot", "results/behavior_traits.png")
     plot_behavior_traits(df, str(behavior_traits_plot_path))
     print(f"行動戦略グラフを保存しました: {behavior_traits_plot_path}")
-    
+
+    behavior_trait_std_plot_path = project_root / config["simulation"].get("behavior_trait_std_plot", "results/behavior_trait_std.png")
+    plot_behavior_trait_std(df, str(behavior_trait_std_plot_path))
+    print(f"行動戦略の標準偏差グラフを保存しました: {behavior_trait_std_plot_path}")
+
     exploration_range_plot_path = project_root / "results/exploration_tendency_range.png"
     plot_trait_range(
         df,

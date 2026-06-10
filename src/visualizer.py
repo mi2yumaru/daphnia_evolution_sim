@@ -199,6 +199,54 @@ def plot_trait_range(
     plt.savefig(output_path, dpi=150)
     plt.close()
 
+def plot_behavior_trait_std(df: pd.DataFrame, output_path: str) -> None:
+    """
+    行動戦略 phenotype の標準偏差の推移を1枚にまとめて保存する。
+
+    Args:
+        df: ログデータを持つDataFrame
+        output_path: 保存先のファイルパス
+    """
+    plt.figure(figsize=(10, 6))
+
+    plt.plot(
+        df["step"],
+        df["std_exploration_tendency"],
+        linewidth=2,
+        label="Exploration Tendency"
+    )
+
+    plt.plot(
+        df["step"],
+        df["std_site_fidelity"],
+        linewidth=2,
+        label="Site Fidelity"
+    )
+
+    plt.plot(
+        df["step"],
+        df["std_risk_tolerance"],
+        linewidth=2,
+        label="Risk Tolerance"
+    )
+
+    plt.plot(
+        df["step"],
+        df["std_reproduction_timing"],
+        linewidth=2,
+        label="Reproduction Timing"
+    )
+
+    plt.title("Standard Deviation of Behavior Traits Over Time")
+    plt.xlabel("Step")
+    plt.ylabel("Standard Deviation")
+    plt.ylim(0, 0.5)
+    plt.legend(loc="upper right")
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+
 def plot_move_rate(df: pd.DataFrame, output_path: str) -> None:
     """
     移動率の時系列グラフを生成して保存する。

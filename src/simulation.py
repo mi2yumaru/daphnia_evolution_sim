@@ -205,6 +205,11 @@ class Simulation:
             average_risk_tolerance = sum(org.phenotype["risk_tolerance"] for org in self.organisms) / population_size
             average_reproduction_timing = sum(org.phenotype["reproduction_timing"] for org in self.organisms) / population_size
         
+            std_exploration_tendency = float(np.std(exploration_values))
+            std_site_fidelity = float(np.std(site_fidelity_values))
+            std_risk_tolerance = float(np.std(risk_tolerance_values))
+            std_reproduction_timing = float(np.std(reproduction_timing_values))
+
             min_exploration_tendency = min(exploration_values)
             max_exploration_tendency = max(exploration_values)
 
@@ -224,6 +229,11 @@ class Simulation:
             average_site_fidelity = 0.0
             average_risk_tolerance = 0.0
             average_reproduction_timing = 0.0
+
+            std_exploration_tendency = 0.0
+            std_site_fidelity = 0.0
+            std_risk_tolerance = 0.0
+            std_reproduction_timing = 0.0
 
             min_exploration_tendency = 0.0
             max_exploration_tendency = 0.0
@@ -250,15 +260,19 @@ class Simulation:
             eat_count=eat_count,
             eat_rate=eat_rate,
             average_exploration_tendency=average_exploration_tendency,
+            std_exploration_tendency=std_exploration_tendency,
             min_exploration_tendency=min_exploration_tendency,
             max_exploration_tendency=max_exploration_tendency,
             average_site_fidelity=average_site_fidelity,
+            std_site_fidelity=std_site_fidelity,
             min_site_fidelity=min_site_fidelity,
             max_site_fidelity=max_site_fidelity,
             average_risk_tolerance=average_risk_tolerance,
+            std_risk_tolerance=std_risk_tolerance,
             min_risk_tolerance=min_risk_tolerance,
             max_risk_tolerance=max_risk_tolerance,
             average_reproduction_timing=average_reproduction_timing,
+            std_reproduction_timing=std_reproduction_timing,
             min_reproduction_timing=min_reproduction_timing,
             max_reproduction_timing=max_reproduction_timing
         )

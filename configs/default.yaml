@@ -10,6 +10,7 @@ simulation:
   behavior_traits_plot: "results/behavior_traits.png"
   move_rate_plot: "results/move_rate.png"
   eat_rate_plot: "results/eat_rate.png"
+  behavior_trait_std_plot: "results/behavior_trait_std.png"
 
 environment:
   width: 100
