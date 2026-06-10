@@ -11,6 +11,9 @@ simulation:
   move_rate_plot: "results/move_rate.png"
   eat_rate_plot: "results/eat_rate.png"
   behavior_trait_std_plot: "results/behavior_trait_std.png"
+  movement_and_eating_rates_plot: "results/movement_and_eating_rates.png"
+  eat_per_move_plot: "results/eat_per_move.png"
+  birth_death_rates_plot: "results/birth_death_rates.png"
 
 environment:
   width: 100

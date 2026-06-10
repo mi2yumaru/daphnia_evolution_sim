@@ -191,6 +191,15 @@ class Simulation:
         move_rate = move_count / population_before if population_before > 0 else 0.0
         eat_rate = eat_count / population_before if population_before > 0 else 0.0
         
+        # 効率指標
+        # eat_per_move は「移動1回あたりの摂食成功数」
+        # move_count が 0 の場合は 0.0 にする
+        eat_per_move = eat_count / move_count if move_count > 0 else 0.0
+
+        # birth_rate / death_rate はステップ開始時の個体数に対する割合
+        birth_rate = birth_count / population_before if population_before > 0 else 0.0
+        death_rate = death_count / population_before if population_before > 0 else 0.0
+
         if population_size > 0:
             average_energy = sum(org.energy for org in self.organisms) / population_size
             average_age = sum(org.age for org in self.organisms) / population_size
@@ -259,6 +268,9 @@ class Simulation:
             move_rate=move_rate,
             eat_count=eat_count,
             eat_rate=eat_rate,
+            eat_per_move=eat_per_move,
+            birth_rate=birth_rate,
+            death_rate=death_rate,
             average_exploration_tendency=average_exploration_tendency,
             std_exploration_tendency=std_exploration_tendency,
             min_exploration_tendency=min_exploration_tendency,

@@ -32,6 +32,9 @@ class SimulationLogger:
         move_rate: float,
         eat_count: int,
         eat_rate: float,
+        eat_per_move: float,
+        birth_rate: float,
+        death_rate: float,
         average_exploration_tendency: float,
         std_exploration_tendency: float,
         min_exploration_tendency: float,
@@ -64,6 +67,9 @@ class SimulationLogger:
             move_rate: 移動率
             eat_count: このステップで餌を食べた個体数
             eat_rate: 摂食率
+            eat_per_move: 移動1回あたりの摂食成功数
+            birth_rate: 繁殖率
+            death_rate: 死亡率
             std_exploration_tendency: 探索傾向の標準偏差
             min_exploration_tendency: 探索傾向の最小値
             max_exploration_tendency: 探索傾向の最大値
@@ -89,6 +95,9 @@ class SimulationLogger:
             "move_rate": move_rate,
             "eat_count": eat_count,
             "eat_rate": eat_rate,
+            "eat_per_move": eat_per_move,
+            "birth_rate": birth_rate,
+            "death_rate": death_rate,
             "average_exploration_tendency": average_exploration_tendency,
             "std_exploration_tendency": std_exploration_tendency,
             "min_exploration_tendency": min_exploration_tendency,

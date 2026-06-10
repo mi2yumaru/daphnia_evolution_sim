@@ -16,10 +16,11 @@ try:
         plot_birth_count,
         plot_death_count,
         plot_behavior_traits,
-        plot_move_rate,
-        plot_eat_rate,
         plot_trait_range,
         plot_behavior_trait_std,
+        plot_movement_and_eating_rates,
+        plot_eat_per_move,
+        plot_birth_death_rates,
     )
     from src.live_visualizer import run_live_visualization
 except Exception:
@@ -32,10 +33,11 @@ except Exception:
         plot_birth_count,
         plot_death_count,
         plot_behavior_traits,
-        plot_move_rate,
-        plot_eat_rate,
         plot_trait_range,
         plot_behavior_trait_std,
+        plot_movement_and_eating_rates,
+        plot_eat_per_move,
+        plot_birth_death_rates,
     )
     from live_visualizer import run_live_visualization
 
@@ -183,13 +185,26 @@ def main() -> None:
     )
     print(f"繁殖タイミングの範囲グラフを保存しました: {reproduction_timing_range_plot_path}")
 
-    move_rate_plot_path = project_root / config["simulation"].get("move_rate_plot", "results/move_rate.png")
-    plot_move_rate(df, str(move_rate_plot_path))
-    print(f"移動率グラフを保存しました: {move_rate_plot_path}")
+    movement_and_eating_rates_plot_path = project_root / config["simulation"].get(
+        "movement_and_eating_rates_plot",
+        "results/movement_and_eating_rates.png"
+    )
+    plot_movement_and_eating_rates(df, str(movement_and_eating_rates_plot_path))
+    print(f"移動率・摂食率グラフを保存しました: {movement_and_eating_rates_plot_path}")
 
-    eat_rate_plot_path = project_root / config["simulation"].get("eat_rate_plot", "results/eat_rate.png")
-    plot_eat_rate(df, str(eat_rate_plot_path))
-    print(f"摂食率グラフを保存しました: {eat_rate_plot_path}")
+    eat_per_move_plot_path = project_root / config["simulation"].get(
+        "eat_per_move_plot",
+        "results/eat_per_move.png"
+    )
+    plot_eat_per_move(df, str(eat_per_move_plot_path))
+    print(f"移動あたり摂食成功率グラフを保存しました: {eat_per_move_plot_path}")
+
+    birth_death_rates_plot_path = project_root / config["simulation"].get(
+        "birth_death_rates_plot",
+        "results/birth_death_rates.png"
+    )
+    plot_birth_death_rates(df, str(birth_death_rates_plot_path))
+    print(f"出生率・死亡率グラフを保存しました: {birth_death_rates_plot_path}")
 
     # 最終統計情報を表示
     print("\n=== シミュレーション完了 ===")

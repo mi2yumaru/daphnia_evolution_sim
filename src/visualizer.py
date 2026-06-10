@@ -7,6 +7,30 @@ visualizer.py - シミュレーション結果の可視化
 import pandas as pd
 import matplotlib.pyplot as plt
 
+def get_dynamic_ylim_upper(values_list, margin_ratio: float = 0.1, min_upper: float = 0.05) -> float:
+    """
+    複数の系列データから、見やすいy軸上限を自動計算する。
+
+    Args:
+        values_list: pandas Series や list の配列
+        margin_ratio: 最大値に対してどれくらい余白を足すか
+        min_upper: 上限が小さすぎる場合の最低値
+
+    Returns:
+        float: y軸上限
+    """
+    max_value = 0.0
+
+    for values in values_list:
+        current_max = float(values.max()) if len(values) > 0 else 0.0
+        if current_max > max_value:
+            max_value = current_max
+
+    if max_value <= 0.0:
+        return min_upper
+
+    upper = max_value * (1.0 + margin_ratio)
+    return max(upper, min_upper)
 
 def plot_population(df: pd.DataFrame, output_path: str) -> None:
     """
@@ -247,39 +271,117 @@ def plot_behavior_trait_std(df: pd.DataFrame, output_path: str) -> None:
     plt.savefig(output_path, dpi=150)
     plt.close()
 
-def plot_move_rate(df: pd.DataFrame, output_path: str) -> None:
+def plot_movement_and_eating_rates(df: pd.DataFrame, output_path: str) -> None:
     """
-    移動率の時系列グラフを生成して保存する。
+    移動率と摂食率の推移を1枚にまとめて保存する。
 
     Args:
         df: ログデータを持つDataFrame
         output_path: 保存先のファイルパス
     """
     plt.figure(figsize=(10, 6))
-    plt.plot(df["step"], df["move_rate"], linewidth=2)
-    plt.title("Move Rate Over Time")
+
+    plt.plot(
+        df["step"],
+        df["move_rate"],
+        linewidth=2,
+        label="Move Rate"
+    )
+
+    plt.plot(
+        df["step"],
+        df["eat_rate"],
+        linewidth=2,
+        label="Eat Rate"
+    )
+
+    plt.title("Movement and Eating Rates Over Time")
     plt.xlabel("Step")
-    plt.ylabel("Move Rate")
-    plt.ylim(0, 1.0)
+    plt.ylabel("Rate")
+
+    y_upper = get_dynamic_ylim_upper(
+        [df["move_rate"], df["eat_rate"]],
+        margin_ratio=0.1,
+        min_upper=0.05
+    )
+    plt.ylim(0, y_upper)
+
+    plt.legend(loc="upper right")
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
-    
-def plot_eat_rate(df: pd.DataFrame, output_path: str) -> None:
+
+def plot_eat_per_move(df: pd.DataFrame, output_path: str) -> None:
     """
-    摂食率の時系列グラフを生成して保存する。
+    移動1回あたりの摂食成功数の推移を保存する。
 
     Args:
         df: ログデータを持つDataFrame
         output_path: 保存先のファイルパス
     """
     plt.figure(figsize=(10, 6))
-    plt.plot(df["step"], df["eat_rate"], linewidth=2)
-    plt.title("Eat Rate Over Time")
+
+    plt.plot(
+        df["step"],
+        df["eat_per_move"],
+        linewidth=2,
+        label="Eat per Move"
+    )
+
+    plt.title("Eat per Move Over Time")
     plt.xlabel("Step")
-    plt.ylabel("Eat Rate")
-    plt.ylim(0, 1.0)
+    plt.ylabel("Eat per Move")
+
+    y_upper = get_dynamic_ylim_upper(
+        [df["eat_per_move"]],
+        margin_ratio=0.1,
+        min_upper=0.1
+    )
+    plt.ylim(0, y_upper)
+
+    plt.legend(loc="upper right")
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+
+def plot_birth_death_rates(df: pd.DataFrame, output_path: str) -> None:
+    """
+    出生率と死亡率の推移を1枚にまとめて保存する。
+
+    Args:
+        df: ログデータを持つDataFrame
+        output_path: 保存先のファイルパス
+    """
+    plt.figure(figsize=(10, 6))
+
+    plt.plot(
+        df["step"],
+        df["birth_rate"],
+        linewidth=2,
+        label="Birth Rate"
+    )
+
+    plt.plot(
+        df["step"],
+        df["death_rate"],
+        linewidth=2,
+        label="Death Rate"
+    )
+
+    plt.title("Birth and Death Rates Over Time")
+    plt.xlabel("Step")
+    plt.ylabel("Rate")
+
+    y_upper = get_dynamic_ylim_upper(
+        [df["birth_rate"], df["death_rate"]],
+        margin_ratio=0.1,
+        min_upper=0.05
+    )
+    plt.ylim(0, y_upper)
+
+    plt.legend(loc="upper right")
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
