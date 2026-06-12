@@ -3,6 +3,7 @@ visualizer.py - シミュレーション結果の可視化
 
 グラフ出力用の関数群
 """
+from pathlib import Path
 
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -380,6 +381,171 @@ def plot_birth_death_rates(df: pd.DataFrame, output_path: str) -> None:
         min_upper=0.05
     )
     plt.ylim(0, y_upper)
+
+    plt.legend(loc="upper right")
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+
+def save_all_single_run_plots(
+    df: pd.DataFrame,
+    output_dir: str | Path
+) -> None:
+    """
+    単一seed実行用のグラフをまとめて保存する。
+
+    Args:
+        df: 1回分のシミュレーションログ
+        output_dir: 出力先ディレクトリ
+    """
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    plot_population(
+        df,
+        str(output_dir / "population.png")
+    )
+
+    plot_average_energy(
+        df,
+        str(output_dir / "average_energy.png")
+    )
+
+    plot_average_age(
+        df,
+        str(output_dir / "average_age.png")
+    )
+
+    plot_birth_count(
+        df,
+        str(output_dir / "birth_count.png")
+    )
+
+    plot_death_count(
+        df,
+        str(output_dir / "death_count.png")
+    )
+
+    plot_behavior_traits(
+        df,
+        str(output_dir / "behavior_traits.png")
+    )
+
+    plot_behavior_trait_std(
+        df,
+        str(output_dir / "behavior_trait_std.png")
+    )
+
+    plot_trait_range(
+        df,
+        str(output_dir / "exploration_tendency_range.png"),
+        average_col="average_exploration_tendency",
+        min_col="min_exploration_tendency",
+        max_col="max_exploration_tendency",
+        title="Exploration Tendency Range Over Time"
+    )
+
+    plot_trait_range(
+        df,
+        str(output_dir / "site_fidelity_range.png"),
+        average_col="average_site_fidelity",
+        min_col="min_site_fidelity",
+        max_col="max_site_fidelity",
+        title="Site Fidelity Range Over Time"
+    )
+
+    plot_trait_range(
+        df,
+        str(output_dir / "risk_tolerance_range.png"),
+        average_col="average_risk_tolerance",
+        min_col="min_risk_tolerance",
+        max_col="max_risk_tolerance",
+        title="Risk Tolerance Range Over Time"
+    )
+
+    plot_trait_range(
+        df,
+        str(output_dir / "reproduction_timing_range.png"),
+        average_col="average_reproduction_timing",
+        min_col="min_reproduction_timing",
+        max_col="max_reproduction_timing",
+        title="Reproduction Timing Range Over Time"
+    )
+
+    plot_movement_and_eating_rates(
+        df,
+        str(output_dir / "movement_and_eating_rates.png")
+    )
+
+    plot_eat_per_move(
+        df,
+        str(output_dir / "eat_per_move.png")
+    )
+
+    plot_birth_death_rates(
+        df,
+        str(output_dir / "birth_death_rates.png")
+    )
+
+def plot_aggregate_mean_std(
+    aggregate_df: pd.DataFrame,
+    output_path: str | Path,
+    metrics: list[tuple[str, str]],
+    title: str,
+    ylabel: str,
+    fixed_ylim: tuple[float, float] | None = None,
+) -> None:
+    """
+    複数seedのstepごとの平均値とseed間標準偏差を描画する。
+
+    Args:
+        aggregate_df:
+            <指標>_mean と <指標>_std を持つDataFrame
+        output_path:
+            グラフ保存先
+        metrics:
+            [(列名の基礎部分, 表示名), ...]
+        title:
+            グラフタイトル
+        ylabel:
+            y軸ラベル
+        fixed_ylim:
+            y軸を固定する場合の範囲
+    """
+    plt.figure(figsize=(10, 6))
+
+    for metric, label in metrics:
+        mean_col = f"{metric}_mean"
+        std_col = f"{metric}_std"
+
+        mean_values = aggregate_df[mean_col]
+        std_values = aggregate_df[std_col].fillna(0.0)
+
+        line, = plt.plot(
+            aggregate_df["step"],
+            mean_values,
+            linewidth=2,
+            label=label
+        )
+
+        lower = (mean_values - std_values).clip(lower=0.0)
+        upper = mean_values + std_values
+
+        plt.fill_between(
+            aggregate_df["step"],
+            lower,
+            upper,
+            alpha=0.2,
+            color=line.get_color()
+        )
+
+    plt.title(title)
+    plt.xlabel("Step")
+    plt.ylabel(ylabel)
+
+    if fixed_ylim is not None:
+        plt.ylim(*fixed_ylim)
 
     plt.legend(loc="upper right")
     plt.grid(True, alpha=0.3)
