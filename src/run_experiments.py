@@ -86,8 +86,15 @@ def create_summary(all_logs: list[pd.DataFrame]) -> pd.DataFrame:
             "final_population": df["population_size"].iloc[-1],
             "mean_population_last_100": tail["population_size"].mean(),
             "mean_move_rate_last_100": tail["move_rate"].mean(),
-            "mean_eat_rate_last_100": tail["eat_rate"].mean(),
-            "mean_eat_per_move_last_100": tail["eat_per_move"].mean(),
+            "mean_total_eat_rate_last_100": (
+                tail["total_eat_rate"].mean()
+                if "total_eat_rate" in tail.columns
+                else tail["eat_rate"].mean()
+            ),
+            "mean_eat_after_move_rate_last_100": tail["eat_after_move_rate"].mean(),
+            "mean_eat_without_move_rate_last_100": tail["eat_without_move_rate"].mean(),
+            "mean_move_count_last_100": tail["move_count"].mean(),
+            "mean_non_move_count_last_100": tail["non_move_count"].mean(),
             "mean_birth_rate_last_100": tail["birth_rate"].mean(),
             "mean_death_rate_last_100": tail["death_rate"].mean(),
             "final_exploration_tendency":
@@ -169,20 +176,21 @@ def main() -> None:
         experiment_dir / "movement_eating_mean_std.png",
         metrics=[
             ("move_rate", "Move Rate"),
-            ("eat_rate", "Eat Rate"),
+            ("total_eat_rate", "Total Eat Rate"),
         ],
-        title="Movement and Eating Rates Across Seeds",
+        title="Movement and Total Eating Rates Across Seeds",
         ylabel="Rate"
     )
 
     plot_aggregate_mean_std(
         aggregate_df,
-        experiment_dir / "eat_per_move_mean_std.png",
+        experiment_dir / "eating_breakdown_rates_mean_std.png",
         metrics=[
-            ("eat_per_move", "Eat per Move")
+            ("eat_after_move_rate", "Eat Success After Move"),
+            ("eat_without_move_rate", "Eat Success Without Move"),
         ],
-        title="Eat per Move Across Seeds",
-        ylabel="Eat per Move"
+        title="Eating Success Rates by Movement State Across Seeds",
+        ylabel="Rate"
     )
 
     plot_aggregate_mean_std(

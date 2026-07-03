@@ -117,6 +117,10 @@ class Simulation:
         move_count = 0
         eat_count = 0
         
+        # 摂食を「移動後」と「非移動」に分けて数える
+        eat_after_move_count = 0
+        eat_without_move_count = 0
+
         behavior_settings = {
             "low_energy_threshold_ratio": self.behavior_config.get("low_energy_threshold_ratio", 0.5),
             "food_detection_range": self.behavior_config.get("food_detection_range", 1),
@@ -150,6 +154,11 @@ class Simulation:
                 organism.last_food_position = (organism.x, organism.y)
                 organism.last_food_step = self.current_step
                 eat_count += 1
+
+                if moved:
+                    eat_after_move_count += 1
+                else:
+                    eat_without_move_count += 1
             
             # 4. エネルギーを消費する
             # living_cost は毎ステップ必ず消費し、move_cost は実際に移動した場合のみ消費する
@@ -193,12 +202,33 @@ class Simulation:
         food_count = self.environment.food_count()
 
         move_rate = move_count / population_before if population_before > 0 else 0.0
-        eat_rate = eat_count / population_before if population_before > 0 else 0.0
-        
-        # 効率指標
-        # eat_per_move は「移動1回あたりの摂食成功数」
-        # move_count が 0 の場合は 0.0 にする
-        eat_per_move = eat_count / move_count if move_count > 0 else 0.0
+
+        # 移動しなかった個体数
+        non_move_count = population_before - move_count
+
+        # 総摂食率: step開始時の個体数に対して、餌を食べた個体の割合
+        total_eat_rate = eat_count / population_before if population_before > 0 else 0.0
+
+        # 既存の eat_rate は互換性のため総摂食率として残す
+        eat_rate = total_eat_rate
+
+        # 移動後摂食率: 移動した個体のうち、移動後に餌を食べた割合
+        eat_after_move_rate = (
+            eat_after_move_count / move_count
+            if move_count > 0
+            else 0.0
+        )
+
+        # 非移動摂食率: step開始時の個体数に対して、移動せずに餌を食べた個体の割合
+        eat_without_move_rate = (
+            eat_without_move_count / non_move_count
+            if non_move_count > 0
+            else 0.0
+        )
+
+        # 旧 eat_per_move は互換性のため残す。
+        # ただし意味は「移動後摂食率」と同じにする。
+        eat_per_move = eat_after_move_rate
 
         # birth_rate / death_rate はステップ開始時の個体数に対する割合
         birth_rate = birth_count / population_before if population_before > 0 else 0.0
@@ -270,9 +300,15 @@ class Simulation:
             death_count=death_count,
             move_count=move_count,
             move_rate=move_rate,
+            non_move_count=non_move_count,
             eat_count=eat_count,
             eat_rate=eat_rate,
             eat_per_move=eat_per_move,
+            eat_after_move_count=eat_after_move_count,
+            eat_without_move_count=eat_without_move_count,
+            eat_after_move_rate=eat_after_move_rate,
+            eat_without_move_rate=eat_without_move_rate,
+            total_eat_rate=total_eat_rate,
             birth_rate=birth_rate,
             death_rate=death_rate,
             average_exploration_tendency=average_exploration_tendency,

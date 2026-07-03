@@ -30,9 +30,15 @@ class SimulationLogger:
         death_count: int,
         move_count: int,
         move_rate: float,
+        non_move_count: int,
         eat_count: int,
         eat_rate: float,
         eat_per_move: float,
+        eat_after_move_count: int,
+        eat_without_move_count: int,
+        eat_after_move_rate: float,
+        eat_without_move_rate: float,
+        total_eat_rate: float,
         birth_rate: float,
         death_rate: float,
         average_exploration_tendency: float,
@@ -65,9 +71,15 @@ class SimulationLogger:
             death_count: このステップで死んだ個体数
             move_count: このステップで移動した個体数
             move_rate: 移動率
+            non_move_count: このステップで移動しなかった個体数
             eat_count: このステップで餌を食べた個体数
             eat_rate: 摂食率
-            eat_per_move: 移動1回あたりの摂食成功数
+            eat_per_move: 互換性用。現在は eat_after_move_rate と同じ値
+            eat_after_move_count: 移動後に餌を食べた個体数
+            eat_without_move_count: 移動せずに餌を食べた個体数
+            eat_after_move_rate: 移動した個体のうち、移動後に餌を食べた割合
+            eat_without_move_rate: 移動しなかった個体のうち、餌を食べた割合
+            total_eat_rate: step開始時個体数に対する、摂食個体全体の割合
             birth_rate: 繁殖率
             death_rate: 死亡率
             std_exploration_tendency: 探索傾向の標準偏差
@@ -93,9 +105,15 @@ class SimulationLogger:
             "death_count": death_count,
             "move_count": move_count,
             "move_rate": move_rate,
+            "non_move_count": non_move_count,
             "eat_count": eat_count,
             "eat_rate": eat_rate,
             "eat_per_move": eat_per_move,
+            "eat_after_move_count": eat_after_move_count,
+            "eat_without_move_count": eat_without_move_count,
+            "eat_after_move_rate": eat_after_move_rate,
+            "eat_without_move_rate": eat_without_move_rate,
+            "total_eat_rate": total_eat_rate,
             "birth_rate": birth_rate,
             "death_rate": death_rate,
             "average_exploration_tendency": average_exploration_tendency,

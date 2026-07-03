@@ -280,6 +280,9 @@ def plot_movement_and_eating_rates(df: pd.DataFrame, output_path: str) -> None:
         df: ログデータを持つDataFrame
         output_path: 保存先のファイルパス
     """
+
+    total_eat_col = "total_eat_rate" if "total_eat_rate" in df.columns else "eat_rate"
+
     plt.figure(figsize=(10, 6))
 
     plt.plot(
@@ -291,9 +294,9 @@ def plot_movement_and_eating_rates(df: pd.DataFrame, output_path: str) -> None:
 
     plt.plot(
         df["step"],
-        df["eat_rate"],
+        df[total_eat_col],
         linewidth=2,
-        label="Eat Rate"
+        label="Total Eat Rate"
     )
 
     plt.title("Movement and Eating Rates Over Time")
@@ -301,7 +304,7 @@ def plot_movement_and_eating_rates(df: pd.DataFrame, output_path: str) -> None:
     plt.ylabel("Rate")
 
     y_upper = get_dynamic_ylim_upper(
-        [df["move_rate"], df["eat_rate"]],
+        [df["move_rate"], df[total_eat_col]],
         margin_ratio=0.1,
         min_upper=0.05
     )
@@ -313,9 +316,9 @@ def plot_movement_and_eating_rates(df: pd.DataFrame, output_path: str) -> None:
     plt.savefig(output_path, dpi=150)
     plt.close()
 
-def plot_eat_per_move(df: pd.DataFrame, output_path: str) -> None:
+def plot_eating_breakdown_rates(df: pd.DataFrame, output_path: str) -> None:
     """
-    移動1回あたりの摂食成功数の推移を保存する。
+    摂食率を「移動後摂食率」「非移動摂食率」「総摂食率」に分けて描画する。
 
     Args:
         df: ログデータを持つDataFrame
@@ -325,22 +328,31 @@ def plot_eat_per_move(df: pd.DataFrame, output_path: str) -> None:
 
     plt.plot(
         df["step"],
-        df["eat_per_move"],
+        df["eat_after_move_rate"],
         linewidth=2,
-        label="Eat per Move"
+        label="Eat Success After Move"
+    )
+    plt.plot(
+        df["step"],
+        df["eat_without_move_rate"],
+        linewidth=2,
+        label="Eat Success Without Move"
     )
 
-    plt.title("Eat per Move Over Time")
+    plt.title("Eating Success Rates by Movement State")
     plt.xlabel("Step")
-    plt.ylabel("Eat per Move")
+    plt.ylabel("Rate")
 
     y_upper = get_dynamic_ylim_upper(
-        [df["eat_per_move"]],
+        [
+            df["eat_after_move_rate"],
+            df["eat_without_move_rate"],
+        ],
         margin_ratio=0.1,
-        min_upper=0.1
+        min_upper=0.05
     )
-    plt.ylim(0, y_upper)
 
+    plt.ylim(0, y_upper)
     plt.legend(loc="upper right")
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
@@ -478,9 +490,9 @@ def save_all_single_run_plots(
         str(output_dir / "movement_and_eating_rates.png")
     )
 
-    plot_eat_per_move(
+    plot_eating_breakdown_rates(
         df,
-        str(output_dir / "eat_per_move.png")
+        str(output_dir / "eating_breakdown_rates.png")
     )
 
     plot_birth_death_rates(
