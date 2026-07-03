@@ -19,13 +19,13 @@ environment:
   width: 100
   height: 100
   mode: "random"            # 食料再生成モード: "random" または "patch"
-  patch_count: 4
-  patch_layout: "random"    # "random" | "radial" | "spread"
+  patch_count: 9
+  patch_layout: "spread"    # "random" | "radial" | "spread"
   patch_radius: 5
   patch_density: 0.8
   outside_respawn_fraction: 0.05  # パッチ外での低確率リポップ割合（patch モード時）
   patch_radial_fraction: 0.25    # 'radial' レイアウト時の中心円の半径割合（短辺に対する比率）
-  patch_spread_use_corners: true # 'spread' レイアウトで角(0,0),(0,H),(W,0),(W,H)を距離計算に含めるか
+  patch_spread_use_corners: false # 'spread' レイアウトで角(0,0),(0,H),(W,0),(W,H)を距離計算に含めるか
   patch_spread_step: 0          # spread レイアウトでの探索候補間隔(0=自動)
   initial_food_count: 500
   food_respawn_rate: 0.02
@@ -36,6 +36,15 @@ behavior:
   food_detection_range: 1
   site_memory_steps: 20
 
+  # 自分のいるマスに餌があるとき、移動しない候補に加える重み
+  current_cell_food_weight: 8.0
+
+  # 周囲方向に餌があるとき、その方向に加える重み
+  nearby_food_weight: 4.0
+
+  # 最後に餌を食べた場所へ近づく方向に加える重み
+  site_memory_weight: 2.0
+
 organism:
   initial_population: 100
   initial_energy: 10
@@ -45,7 +54,7 @@ organism:
   reproduction_cost: 10
   offspring_energy: 5
   max_age: 200
-  move_type: "von_neumann"  # moore(8) or von_neumann(4)
+  move_type: "moore"  # moore(8) or von_neumann(4)
 
 genetics:
   genome_length: 20

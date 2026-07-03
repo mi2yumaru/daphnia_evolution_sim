@@ -119,7 +119,11 @@ class Simulation:
         
         behavior_settings = {
             "low_energy_threshold_ratio": self.behavior_config.get("low_energy_threshold_ratio", 0.5),
+            "food_detection_range": self.behavior_config.get("food_detection_range", 1),
             "site_memory_steps": self.behavior_config.get("site_memory_steps", 20),
+            "current_cell_food_weight": self.behavior_config.get("current_cell_food_weight", 8.0),
+            "nearby_food_weight": self.behavior_config.get("nearby_food_weight", 4.0),
+            "site_memory_weight": self.behavior_config.get("site_memory_weight", 2.0),
             "current_step": self.current_step
         }
 

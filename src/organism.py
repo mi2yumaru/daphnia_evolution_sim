@@ -86,6 +86,9 @@ class Organism:
         """
         個体を移動させる
         
+        自分のいるマスも含めて餌を確認し、「移動しない」ことも候補の1つとして重み付き選択する。
+
+
         Returns:
         bool: 実際に座標が変化した場合は True、移動しなかった場合は False
 
@@ -118,78 +121,110 @@ class Organism:
             risk = self.phenotype["risk_tolerance"]
             base_move_prob *= 0.4 + 0.6 * risk
 
-        # 周囲に餌が見つかるかどうかを判定
-        detection_range = behavior_config.get("food_detection_range", 1)
-        food_neighbors = []
+        # 念のため 0.0〜1.0 に丸める
+        base_move_prob = float(np.clip(base_move_prob, 0.0, 1.0))
+
+         # 行動設定
+        detection_range = int(behavior_config.get("food_detection_range", 1))
+        current_cell_food_weight = float(behavior_config.get("current_cell_food_weight", 8.0))
+        nearby_food_weight = float(behavior_config.get("nearby_food_weight", 4.0))
+        site_memory_weight = float(behavior_config.get("site_memory_weight", 2.0))
+
+        # 候補: (0, 0) は「移動しない」
+        candidates = [(0, 0)]
+
+        # グリッド外に出る方向は候補から除く
+        for dx, dy in directions:
+            target_x = self.x + dx
+            target_y = self.y + dy
+            if 0 <= target_x < width and 0 <= target_y < height:
+                candidates.append((dx, dy))
+
+        # もし動ける方向がない場合は移動しない
+        if len(candidates) == 1:
+            return False
+
+        # 自分のいるマスに餌があるか
+        current_cell_has_food = environment.has_food(self.x, self.y)
+
+        # 周囲方向に餌が見つかるかどうかを判定
+        # detection_range > 1 の場合は、その方向に何マス先まで見る
+        food_directions = set()
+
         for dx, dy in directions:
             for dist in range(1, detection_range + 1):
                 target_x = self.x + dx * dist
                 target_y = self.y + dy * dist
-                if 0 <= target_x < width and 0 <= target_y < height:
-                    if environment.has_food(target_x, target_y):
-                        food_neighbors.append((dx, dy))
-                        break
-                else:
+
+                if not (0 <= target_x < width and 0 <= target_y < height):
+                    break
+
+                if environment.has_food(target_x, target_y):
+                    # 実際の移動は1マスなので、餌がある「方向」だけ記録する
+                    food_directions.add((dx, dy))
                     break
 
         # last_food_position が有効かどうかを判定
         memory_steps = behavior_config.get("site_memory_steps", 20)
+
         use_site_memory = (
             self.last_food_position is not None
             and self.last_food_step is not None
             and self.last_food_step + memory_steps >= behavior_config.get("current_step", 0)
         )
 
-        stay_probability = 1.0 - base_move_prob
-        if stay_probability < 0.0:
-            stay_probability = 0.0
+        weights = []
+        move_candidate_count = len(candidates) - 1
 
-        if food_neighbors:
-            # 餌が存在する場合は餌方向にバイアスをかける
-            candidates = directions.copy()
-            weights = []
-            for dx, dy in candidates:
-                weight = 1.0
-                if (dx, dy) in food_neighbors:
-                    weight += 4.0
+        for dx, dy in candidates:
+            # stay: 移動しない
+            if dx == 0 and dy == 0:
+                # exploration_tendency が低いほど stay が強くなる
+                weight = 1.0 - base_move_prob
+
+                # 自分のマスに餌がある場合は、移動しない重みを強くする
+                if current_cell_has_food:
+                    weight += current_cell_food_weight
+
+            # move: 周囲へ移動
+            else:
+                # exploration_tendency が高いほど移動候補全体が強くなる
+                weight = base_move_prob / move_candidate_count
+
+                # その方向に餌がある場合は、その方向を強くする
+                if (dx, dy) in food_directions:
+                    weight += nearby_food_weight
+
+                # 最後に餌を食べた場所へ近づく方向を少し優遇
                 if use_site_memory and self.last_food_position is not None:
                     target_x = self.x + dx
                     target_y = self.y + dy
-                    distance_before = abs(self.last_food_position[0] - self.x) + abs(self.last_food_position[1] - self.y)
-                    distance_after = abs(self.last_food_position[0] - target_x) + abs(self.last_food_position[1] - target_y)
+
+                    distance_before = (
+                        abs(self.last_food_position[0] - self.x)
+                        + abs(self.last_food_position[1] - self.y)
+                    )
+                    distance_after = (
+                        abs(self.last_food_position[0] - target_x)
+                        + abs(self.last_food_position[1] - target_y)
+                    )
+
                     if distance_after < distance_before:
-                        weight += 2.0 * self.phenotype["site_fidelity"]
-                weights.append(weight)
-            chosen = np.random.choice(len(candidates), p=np.array(weights) / np.sum(weights))
-            dx, dy = candidates[chosen]
+                        weight += site_memory_weight * self.phenotype["site_fidelity"]
+
+            weights.append(max(weight, 0.0))
+
+        weights = np.array(weights, dtype=float)
+
+        if weights.sum() <= 0.0:
+            dx, dy = 0, 0
         else:
-            if np.random.random() >= base_move_prob:
-                dx, dy = 0, 0
-            else:
-                candidates = directions.copy()
-                weights = [1.0] * len(candidates)
-                if use_site_memory and self.last_food_position is not None:
-                    for i, (dx, dy) in enumerate(candidates):
-                        target_x = self.x + dx
-                        target_y = self.y + dy
-                        if 0 <= target_x < width and 0 <= target_y < height:
-                            distance_before = abs(self.last_food_position[0] - self.x) + abs(self.last_food_position[1] - self.y)
-                            distance_after = abs(self.last_food_position[0] - target_x) + abs(self.last_food_position[1] - target_y)
-                            if distance_after < distance_before:
-                                weights[i] += self.phenotype["site_fidelity"] * 2.0
-                weights = np.array(weights)
-                if weights.sum() == 0:
-                    choice = np.random.randint(len(candidates))
-                else:
-                    weights = weights / weights.sum()
-                    choice = np.random.choice(len(candidates), p=weights)
-                dx, dy = candidates[choice]
+            probabilities = weights / weights.sum()
+            choice = np.random.choice(len(candidates), p=probabilities)
+            dx, dy = candidates[choice]
 
-        new_x = max(0, min(self.x + dx, width - 1))
-        new_y = max(0, min(self.y + dy, height - 1))
-
-        self.x = new_x
-        self.y = new_y
+        self.x = self.x + dx
+        self.y = self.y + dy
 
         return (self.x != old_x) or (self.y != old_y)
     
