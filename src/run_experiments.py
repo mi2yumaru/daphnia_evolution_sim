@@ -95,6 +95,21 @@ def create_summary(all_logs: list[pd.DataFrame]) -> pd.DataFrame:
             "mean_eat_without_move_rate_last_100": tail["eat_without_move_rate"].mean(),
             "mean_move_count_last_100": tail["move_count"].mean(),
             "mean_non_move_count_last_100": tail["non_move_count"].mean(),
+            "mean_shared_food_cell_count_last_100": (
+                tail["shared_food_cell_count"].mean()
+                if "shared_food_cell_count" in tail.columns
+                else 0.0
+            ),
+            "mean_shared_food_consumer_count_last_100": (
+                tail["shared_food_consumer_count"].mean()
+                if "shared_food_consumer_count" in tail.columns
+                else 0.0
+            ),
+            "mean_consumers_per_shared_food_last_100": (
+                tail["mean_consumers_per_shared_food"].mean()
+                if "mean_consumers_per_shared_food" in tail.columns
+                else 0.0
+            ),
             "mean_birth_rate_last_100": tail["birth_rate"].mean(),
             "mean_death_rate_last_100": tail["death_rate"].mean(),
             "final_exploration_tendency":

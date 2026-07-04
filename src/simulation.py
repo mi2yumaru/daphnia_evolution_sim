@@ -4,7 +4,8 @@ simulation.py - シミュレーション主制御
 Simulation クラスが各ステップでの環境、個体群、食料の更新を管理
 """
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
+from collections import defaultdict
 import numpy as np
 try:
     from .organism import Organism
@@ -121,6 +122,10 @@ class Simulation:
         eat_after_move_count = 0
         eat_without_move_count = 0
 
+        # 同じ餌マスを複数個体が共有した回数を記録する
+        shared_food_cell_count = 0
+        shared_food_consumer_count = 0
+
         behavior_settings = {
             "low_energy_threshold_ratio": self.behavior_config.get("low_energy_threshold_ratio", 0.5),
             "food_detection_range": self.behavior_config.get("food_detection_range", 1),
@@ -131,11 +136,17 @@ class Simulation:
             "current_step": self.current_step
         }
 
+        # 各個体が移動したかどうかを保持する
+        # [(organism, moved), ...] の形で保存
+        movement_records = []
+
+        # -------------------------
+        # 2. 移動フェーズ
+        # -------------------------
         for organism in self.organisms:
             low_energy_threshold = org_config["reproduction_threshold"] * behavior_settings["low_energy_threshold_ratio"]
             low_energy = organism.energy < low_energy_threshold
 
-            # 2. 移動させる
             moved = organism.move(
                 env_config["width"],
                 env_config["height"],
@@ -147,26 +158,66 @@ class Simulation:
             if moved:
                 move_count += 1
 
-            # 3. 移動先に餌があれば食べる
+            movement_records.append((organism, moved))
+
+        # -------------------------
+        # 3. 摂食フェーズ
+        #    同じ餌マスにいる個体で food_energy を等分する
+        # -------------------------
+        eating_candidates: Dict[Tuple[int, int], List[tuple[Organism, bool]]] = defaultdict(list)
+
+        # 餌があるマスにいる個体を、座標ごとに集める
+        for organism, moved in movement_records:
+            position = (organism.x, organism.y)
+
             if self.environment.has_food(organism.x, organism.y):
-                organism.eat(env_config["food_energy"])
-                self.environment.remove_food(organism.x, organism.y)
-                organism.last_food_position = (organism.x, organism.y)
+                eating_candidates[position].append((organism, moved))
+
+        # 座標ごとに餌を分配する
+        for (food_x, food_y), candidates in eating_candidates.items():
+            # 念のため、まだ餌が存在するか確認
+            if not self.environment.has_food(food_x, food_y):
+                continue
+
+            consumer_count = len(candidates)
+
+            if consumer_count <= 0:
+                continue
+
+            # 2個体以上が同じ餌マスを利用する場合、「共有餌」として記録する
+            if consumer_count > 1:
+                shared_food_cell_count += 1
+                shared_food_consumer_count += consumer_count
+
+            # 同じ餌マスにいる個体数で food_energy を等分
+            shared_food_energy = env_config["food_energy"] / consumer_count
+
+            for organism, moved in candidates:
+                organism.eat(shared_food_energy)
+                organism.last_food_position = (food_x, food_y)
                 organism.last_food_step = self.current_step
+
                 eat_count += 1
 
                 if moved:
                     eat_after_move_count += 1
                 else:
                     eat_without_move_count += 1
-            
-            # 4. エネルギーを消費する
-            # living_cost は毎ステップ必ず消費し、move_cost は実際に移動した場合のみ消費する
+
+            # そのマスの餌は、このstepで消費されたので削除
+            self.environment.remove_food(food_x, food_y)
+
+
+        # -------------------------
+        # 4-5. エネルギー消費・繁殖フェーズ
+        # -------------------------
+        for organism, moved in movement_records:
+            # living_cost は毎ステップ必ず消費
+            # move_cost は実際に移動した場合のみ消費
             move_cost = org_config["move_cost"] if moved else 0.0
-            
             organism.consume_energy(
                 move_cost,
-                org_config["living_cost"]
+                org_config["living_cost"],
             )
             
             # 5. 繁殖可能なら子個体を作る
@@ -229,6 +280,13 @@ class Simulation:
         # 旧 eat_per_move は互換性のため残す。
         # ただし意味は「移動後摂食率」と同じにする。
         eat_per_move = eat_after_move_rate
+
+        # 共有された餌1マスあたりの平均摂食個体数
+        mean_consumers_per_shared_food = (
+            shared_food_consumer_count / shared_food_cell_count
+            if shared_food_cell_count > 0
+            else 0.0
+        )
 
         # birth_rate / death_rate はステップ開始時の個体数に対する割合
         birth_rate = birth_count / population_before if population_before > 0 else 0.0
@@ -309,6 +367,9 @@ class Simulation:
             eat_after_move_rate=eat_after_move_rate,
             eat_without_move_rate=eat_without_move_rate,
             total_eat_rate=total_eat_rate,
+            shared_food_cell_count=shared_food_cell_count,
+            shared_food_consumer_count=shared_food_consumer_count,
+            mean_consumers_per_shared_food=mean_consumers_per_shared_food,
             birth_rate=birth_rate,
             death_rate=death_rate,
             average_exploration_tendency=average_exploration_tendency,

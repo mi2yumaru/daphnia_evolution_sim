@@ -39,6 +39,9 @@ class SimulationLogger:
         eat_after_move_rate: float,
         eat_without_move_rate: float,
         total_eat_rate: float,
+        shared_food_cell_count: int,
+        shared_food_consumer_count: int,
+        mean_consumers_per_shared_food: float,
         birth_rate: float,
         death_rate: float,
         average_exploration_tendency: float,
@@ -80,6 +83,9 @@ class SimulationLogger:
             eat_after_move_rate: 移動した個体のうち、移動後に餌を食べた割合
             eat_without_move_rate: 移動しなかった個体のうち、餌を食べた割合
             total_eat_rate: step開始時個体数に対する、摂食個体全体の割合
+            shared_food_cell_count: 共有餌のマス数
+            shared_food_consumer_count: 共有餌を消費した個体数
+            mean_consumers_per_shared_food: 共有餌1マスあたりの平均摂食個体数
             birth_rate: 繁殖率
             death_rate: 死亡率
             std_exploration_tendency: 探索傾向の標準偏差
@@ -114,6 +120,9 @@ class SimulationLogger:
             "eat_after_move_rate": eat_after_move_rate,
             "eat_without_move_rate": eat_without_move_rate,
             "total_eat_rate": total_eat_rate,
+            "shared_food_cell_count": shared_food_cell_count,
+            "shared_food_consumer_count": shared_food_consumer_count,
+            "mean_consumers_per_shared_food": mean_consumers_per_shared_food,
             "birth_rate": birth_rate,
             "death_rate": death_rate,
             "average_exploration_tendency": average_exploration_tendency,
