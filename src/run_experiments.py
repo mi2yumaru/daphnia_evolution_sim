@@ -43,6 +43,75 @@ def parse_args() -> argparse.Namespace:
 
     return parser.parse_args()
 
+def add_food_sharing_metrics(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    餌共有に関する派生指標を追加する。
+
+    追加する列:
+        consumed_food_cell_count:
+            そのstepで消費された餌マス数
+
+        shared_food_cell_ratio:
+            消費された餌マスのうち、
+            複数個体によって共有された餌マスの割合
+
+        shared_food_consumer_ratio:
+            摂食した個体のうち、
+            共有餌を利用した個体の割合
+
+        mean_consumers_per_shared_food_plot:
+            共有餌1マスあたりの平均摂食個体数。
+            共有が発生しなかったstepではNaNとし、
+            seed平均を不当に低下させないようにする。
+    """
+    result = df.copy()
+
+    # 非共有餌を食べた個体数
+    # 非共有餌では「1個体 = 1餌マス」なので、
+    # そのまま非共有餌マス数として扱える。
+    non_shared_food_cell_count = (
+        result["eat_count"]
+        - result["shared_food_consumer_count"]
+    ).clip(lower=0)
+
+    # そのstepで消費されたユニークな餌マス数
+    result["consumed_food_cell_count"] = (
+        result["shared_food_cell_count"]
+        + non_shared_food_cell_count
+    )
+
+    # 消費餌マスのうち、共有された餌マスの割合
+    food_cell_denominator = result[
+        "consumed_food_cell_count"
+    ].where(
+        result["consumed_food_cell_count"] > 0
+    )
+
+    result["shared_food_cell_ratio"] = (
+        result["shared_food_cell_count"]
+        / food_cell_denominator
+    )
+
+    # 摂食個体のうち、共有餌を利用した個体の割合
+    consumer_denominator = result["eat_count"].where(
+        result["eat_count"] > 0
+    )
+
+    result["shared_food_consumer_ratio"] = (
+        result["shared_food_consumer_count"]
+        / consumer_denominator
+    )
+
+    # 共有が起きていないstepの0を、
+    # seed平均計算時に含めないためのグラフ用列
+    result["mean_consumers_per_shared_food_plot"] = (
+        result["mean_consumers_per_shared_food"].where(
+            result["shared_food_cell_count"] > 0
+        )
+    )
+
+    return result
+
 def aggregate_runs(all_logs: list[pd.DataFrame]) -> pd.DataFrame:
     """
     各seedのログをstep単位で集約し、平均とseed間標準偏差を求める。
@@ -110,6 +179,12 @@ def create_summary(all_logs: list[pd.DataFrame]) -> pd.DataFrame:
                 if "mean_consumers_per_shared_food" in tail.columns
                 else 0.0
             ),
+            "mean_shared_food_cell_ratio_last_100": (
+                tail["shared_food_cell_ratio"].mean()
+            ),
+            "mean_shared_food_consumer_ratio_last_100": (
+                tail["shared_food_consumer_ratio"].mean()
+            ),
             "mean_birth_rate_last_100": tail["birth_rate"].mean(),
             "mean_death_rate_last_100": tail["death_rate"].mean(),
             "final_exploration_tendency":
@@ -157,7 +232,9 @@ def main() -> None:
             save_plots=args.save_run_plots,
         )
 
-        df = df.copy()
+        # 餌共有に関する派生指標を追加
+        df = add_food_sharing_metrics(df)
+        
         df["seed"] = seed
         all_logs.append(df)
 
@@ -206,6 +283,37 @@ def main() -> None:
         ],
         title="Eating Success Rates by Movement State Across Seeds",
         ylabel="Rate"
+    )
+
+    plot_aggregate_mean_std(
+        aggregate_df,
+        experiment_dir / "food_sharing_ratios_mean_std.png",
+        metrics=[
+            (
+                "shared_food_cell_ratio",
+                "Shared Food Cell Ratio"
+            ),
+            (
+                "shared_food_consumer_ratio",
+                "Shared Food Consumer Ratio"
+            ),
+        ],
+        title="Food Sharing Ratios Across Seeds",
+        ylabel="Ratio",
+        fixed_ylim=(0.0, 1.0),
+    )
+
+    plot_aggregate_mean_std(
+        aggregate_df,
+        experiment_dir / "consumers_per_shared_food_mean_std.png",
+        metrics=[
+            (
+                "mean_consumers_per_shared_food_plot",
+                "Mean Consumers per Shared Food"
+            ),
+        ],
+        title="Mean Consumers per Shared Food Across Seeds",
+        ylabel="Consumers per Shared Food",
     )
 
     plot_aggregate_mean_std(
