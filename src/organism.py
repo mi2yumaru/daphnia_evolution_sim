@@ -27,7 +27,8 @@ class Organism:
         y: int,
         initial_energy: float,
         genome_length: int,
-        genome: Optional[np.ndarray] = None
+        genome: Optional[np.ndarray] = None,
+        initial_age: int = 0,
     ):
         """
         個体を初期化
@@ -38,12 +39,19 @@ class Organism:
             initial_energy: 初期エネルギー値
             genome_length: ゲノム長
             genome: ゲノム配列。Noneの場合は0/1ランダムで初期化
+            initial_age: 初期年齢。デフォルトは0
         """
+
+        if initial_age < 0:
+            raise ValueError(
+                f"initial_age must be non-negative, got {initial_age}"
+            )
+
         self.x: int = x
         self.y: int = y
         self.energy: float = initial_energy
-        self.age: int = 0
-        
+        self.age: int = initial_age
+
         if genome is None:
             # ランダムな0/1配列で初期化
             self.genome: np.ndarray = np.random.randint(0, 2, size=genome_length)

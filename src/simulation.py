@@ -43,6 +43,13 @@ class Simulation:
         
         # 乱数シードの設定
         np.random.seed(sim_config["random_seed"])
+
+        # 初期年齢専用の独立した乱数生成器
+        initial_age_rng = np.random.default_rng(
+            np.random.SeedSequence(
+                [int(sim_config["random_seed"]), 1]
+            )
+        )
         
         # 環境の初期化
         self.environment = Environment(
@@ -61,16 +68,42 @@ class Simulation:
         )
         self.environment.init_food(env_config["initial_food_count"])
         
+        # 初期年齢ランダム化設定
+        randomize_initial_age = org_config.get(
+            "randomize_initial_age",
+            False,
+        )
+
+        max_age = int(org_config["max_age"])
+
+        if max_age <= 0:
+            raise ValueError(
+                f"max_age must be positive, got {max_age}"
+            )
+
         # 個体群の初期化
         self.organisms: List[Organism] = []
         for _ in range(org_config["initial_population"]):
             x = np.random.randint(0, env_config["width"])
             y = np.random.randint(0, env_config["height"])
+
+            if randomize_initial_age:
+                # 0 ～ max_age-1 の一様分布
+                initial_age = int(
+                    initial_age_rng.integers(
+                        low=0,
+                        high=max_age,
+                    )
+                )
+            else:
+                initial_age = 0
+
             organism = Organism(
                 x=x,
                 y=y,
                 initial_energy=org_config["initial_energy"],
-                genome_length=gen_config["genome_length"]
+                genome_length=gen_config["genome_length"],
+                initial_age=initial_age,
             )
             self.organisms.append(organism)
         

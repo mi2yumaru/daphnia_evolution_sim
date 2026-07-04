@@ -18,7 +18,7 @@ simulation:
 environment:
   width: 100
   height: 100
-  mode: "random"            # 食料再生成モード: "random" または "patch"
+  mode: "patch"            # 食料再生成モード: "random" または "patch"
   patch_count: 9
   patch_layout: "spread"    # "random" | "radial" | "spread"
   patch_radius: 5
@@ -53,6 +53,10 @@ organism:
   reproduction_threshold: 20
   reproduction_cost: 10
   offspring_energy: 5
+
+  # 初期個体の年齢を 0 ～ max_age-1 の範囲でランダム化するか
+  randomize_initial_age: false
+
   max_age: 200
   move_type: "moore"  # moore(8) or von_neumann(4)
 
