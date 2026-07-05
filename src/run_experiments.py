@@ -250,6 +250,7 @@ def main() -> None:
     experiment_dir.mkdir(parents=True, exist_ok=True)
 
     all_logs: list[pd.DataFrame] = []
+    all_lineage_summaries: list[pd.DataFrame] = []
 
     for seed in args.seeds:
         print(f"seed={seed} を実行中...")
@@ -271,6 +272,32 @@ def main() -> None:
         df["seed"] = seed
         all_logs.append(df)
 
+        # --------------------------------
+        # Founder系統×行動戦略summaryを取得
+        # --------------------------------
+        lineage_summary_path = (
+            seed_dir
+            / "lineage_strategy_summary.csv"
+        )
+
+        if not lineage_summary_path.exists():
+            raise FileNotFoundError(
+                "lineage_strategy_summary.csv "
+                f"が見つかりません: "
+                f"{lineage_summary_path}"
+            )
+
+        lineage_summary_df = pd.read_csv(lineage_summary_path)
+
+        # seed列を先頭に追加
+        lineage_summary_df.insert(
+            0,
+            "seed",
+            seed,
+        )
+
+        all_lineage_summaries.append(lineage_summary_df)
+
     if not all_logs:
         raise RuntimeError("実行結果がありません。")
 
@@ -284,6 +311,43 @@ def main() -> None:
     summary_df.to_csv(
         experiment_dir / "summary.csv",
         index=False
+    )
+
+    # --------------------------------
+    # 全seedのFounder系統summaryを結合
+    # --------------------------------
+    if not all_lineage_summaries:raise RuntimeError("系譜summaryがありません。")
+
+    lineage_strategy_all_seeds_df = (
+        pd.concat(
+            all_lineage_summaries,
+            ignore_index=True,
+        )
+        .sort_values(["seed","founder_id",])
+        .reset_index(drop=True)
+    )
+
+
+    # extinction_stepを
+    # 欠損可能な整数型に変換
+    if (
+        "extinction_step"
+        in lineage_strategy_all_seeds_df.columns
+    ):
+        lineage_strategy_all_seeds_df[
+            "extinction_step"
+        ] = (
+            lineage_strategy_all_seeds_df[
+                "extinction_step"
+            ]
+            .astype("Int64")
+        )
+
+
+    lineage_strategy_all_seeds_df.to_csv(
+        experiment_dir
+        / "lineage_strategy_all_seeds.csv",
+        index=False,
     )
 
     plot_aggregate_mean_std(
