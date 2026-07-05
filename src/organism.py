@@ -29,6 +29,7 @@ class Organism:
         genome_length: int,
         genome: Optional[np.ndarray] = None,
         initial_age: int = 0,
+        lifespan: Optional[int] = None,
     ):
         """
         個体を初期化
@@ -40,6 +41,7 @@ class Organism:
             genome_length: ゲノム長
             genome: ゲノム配列。Noneの場合は0/1ランダムで初期化
             initial_age: 初期年齢。デフォルトは0
+            lifespan: 個体の寿命。Noneの場合は死亡判定時のmax_ageを使用
         """
 
         if initial_age < 0:
@@ -51,6 +53,13 @@ class Organism:
         self.y: int = y
         self.energy: float = initial_energy
         self.age: int = initial_age
+
+        if lifespan is not None and lifespan <= 0:
+            raise ValueError(
+                f"lifespan must be positive, got {lifespan}"
+            )
+
+        self.lifespan: Optional[int] = lifespan
 
         if genome is None:
             # ランダムな0/1配列で初期化
@@ -279,7 +288,8 @@ class Organism:
         offspring_energy: float,
         reproduction_cost: float,
         mutation_rate: float,
-        genome_length: int
+        genome_length: int,
+        offspring_lifespan: Optional[int] = None,
     ) -> "Organism":
         """
         子個体を生成
@@ -294,6 +304,7 @@ class Organism:
             reproduction_cost: 繁殖コスト
             mutation_rate: ゲノムの各ビットについて、変異する確率
             genome_length: ゲノム長
+            offspring_lifespan: 子個体の寿命。Noneの場合は死亡判定時のmax_ageを使用
         
         Returns:
             Organism: 生成された子個体
@@ -321,7 +332,9 @@ class Organism:
             y=child_y,
             initial_energy=offspring_energy,
             genome_length=genome_length,
-            genome=child_genome
+            genome=child_genome,
+            initial_age=0,
+            lifespan=offspring_lifespan,
         )
         
         return child
@@ -337,8 +350,20 @@ class Organism:
         
         Returns:
             bool: 死亡していればTrue
+
+        個体固有の lifespan が設定されている場合はそれを使用し、
+        未設定の場合は従来の max_age を使用する。
         """
-        return self.energy <= 0 or self.age >= max_age
+        effective_lifespan = (
+            self.lifespan
+            if self.lifespan is not None
+            else max_age
+        )
+
+        return (
+            self.energy <= 0
+            or self.age >= effective_lifespan
+        )
     
     def age_one_step(self) -> None:
         """年齢を1増やす"""

@@ -50,6 +50,16 @@ class Simulation:
                 [int(sim_config["random_seed"]), 1]
             )
         )
+
+        # 個体寿命専用の独立した乱数生成器
+        self.lifespan_rng = np.random.default_rng(
+            np.random.SeedSequence(
+                [
+                    int(sim_config["random_seed"]),
+                    2,
+                ]
+            )
+        )
         
         # 環境の初期化
         self.environment = Environment(
@@ -80,6 +90,46 @@ class Simulation:
             raise ValueError(
                 f"max_age must be positive, got {max_age}"
             )
+        
+        # 個体寿命設定
+        self.randomize_lifespan = org_config.get(
+            "randomize_lifespan",
+            False,
+        )
+
+        self.fixed_lifespan = int(
+            org_config["max_age"]
+        )
+
+        self.lifespan_min = int(
+            org_config.get(
+                "lifespan_min",
+                self.fixed_lifespan,
+            )
+        )
+
+        self.lifespan_max = int(
+            org_config.get(
+                "lifespan_max",
+                self.fixed_lifespan,
+            )
+        )
+
+        if self.fixed_lifespan <= 0:
+            raise ValueError(
+                f"max_age must be positive, got {self.fixed_lifespan}"
+            )
+
+        if self.randomize_lifespan:
+            if self.lifespan_min <= 0:
+                raise ValueError(
+                    "lifespan_min must be positive"
+                )
+
+            if self.lifespan_min > self.lifespan_max:
+                raise ValueError(
+                    "lifespan_min must be <= lifespan_max"
+                )
 
         # 個体群の初期化
         self.organisms: List[Organism] = []
@@ -87,12 +137,15 @@ class Simulation:
             x = np.random.randint(0, env_config["width"])
             y = np.random.randint(0, env_config["height"])
 
+            # 個体固有の寿命を生成
+            lifespan = self._sample_lifespan()
+
             if randomize_initial_age:
-                # 0 ～ max_age-1 の一様分布
+                # lifespan以上の年齢を生成しない
                 initial_age = int(
                     initial_age_rng.integers(
                         low=0,
-                        high=max_age,
+                        high=lifespan,
                     )
                 )
             else:
@@ -104,6 +157,7 @@ class Simulation:
                 initial_energy=org_config["initial_energy"],
                 genome_length=gen_config["genome_length"],
                 initial_age=initial_age,
+                lifespan=lifespan,
             )
             self.organisms.append(organism)
         
@@ -120,6 +174,26 @@ class Simulation:
         self.last_birth_count = 0
         self.last_death_count = 0
     
+    def _sample_lifespan(self) -> int:
+        """
+        個体の寿命を生成する。
+
+        randomize_lifespan=true:
+            lifespan_min ～ lifespan_max の一様分布
+
+        randomize_lifespan=false:
+            max_age の固定値
+        """
+        if not self.randomize_lifespan:
+            return self.fixed_lifespan
+
+        return int(
+            self.lifespan_rng.integers(
+                low=self.lifespan_min,
+                high=self.lifespan_max + 1,
+            )
+        )
+
     def step(self) -> None:
         """
         シミュレーションを1ステップ進める
@@ -255,13 +329,16 @@ class Simulation:
             
             # 5. 繁殖可能なら子個体を作る
             if organism.can_reproduce(org_config["reproduction_threshold"]):
+                offspring_lifespan = self._sample_lifespan()
+                
                 child = organism.reproduce(
                     width=env_config["width"],
                     height=env_config["height"],
                     offspring_energy=org_config["offspring_energy"],
                     reproduction_cost=org_config["reproduction_cost"],
                     mutation_rate=gen_config["mutation_rate"],
-                    genome_length=gen_config["genome_length"]
+                    genome_length=gen_config["genome_length"],
+                    offspring_lifespan=offspring_lifespan,
                 )
                 new_offspring.append(child)
         

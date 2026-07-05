@@ -57,6 +57,14 @@ organism:
   # 初期個体の年齢を 0 ～ max_age-1 の範囲でランダム化するか
   randomize_initial_age: false
 
+  # 個体ごとに寿命をランダム化するか
+  randomize_lifespan: true
+
+  # randomize_lifespan=true の場合の寿命範囲
+  lifespan_min: 150
+  lifespan_max: 250
+
+  # randomize_lifespan=false の場合に使用する固定寿命
   max_age: 200
   move_type: "moore"  # moore(8) or von_neumann(4)
 
