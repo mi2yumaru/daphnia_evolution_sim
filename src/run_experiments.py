@@ -499,6 +499,34 @@ def main() -> None:
     )
 
     # 最大系統シェア
+    largest_lineage_upper = (
+        aggregate_df[
+            "largest_lineage_share_mean"
+        ]
+        +
+        aggregate_df[
+            "largest_lineage_share_std"
+        ].fillna(0.0)
+    ).max()
+
+    # 最大値に10%の余白を追加
+    largest_lineage_ymax = (
+        largest_lineage_upper * 1.1
+    )
+
+    # 小さすぎる場合でも最低0.1までは表示
+    largest_lineage_ymax = max(
+        largest_lineage_ymax,
+        0.1,
+    )
+
+    # Shareなので1.0を超えないようにする
+    largest_lineage_ymax = min(
+        largest_lineage_ymax,
+        1.0,
+    )
+
+
     plot_aggregate_mean_std(
         aggregate_df,
         experiment_dir
@@ -511,7 +539,10 @@ def main() -> None:
         ],
         title="Largest Lineage Share Across Seeds",
         ylabel="Share",
-        fixed_ylim=(0.0, 1.0),
+        fixed_ylim=(
+            0.0,
+            largest_lineage_ymax,
+        ),
     )
 
     # 世代進行
