@@ -187,6 +187,10 @@ def create_summary(all_logs: list[pd.DataFrame]) -> pd.DataFrame:
             ),
             "mean_birth_rate_last_100": tail["birth_rate"].mean(),
             "mean_death_rate_last_100": tail["death_rate"].mean(),
+            "mean_age_death_rate_last_100": tail["age_death_rate"].mean(),
+            "mean_energy_death_rate_last_100": tail["energy_death_rate"].mean(),
+            "mean_age_death_count_last_100": tail["age_death_count"].mean(),
+            "mean_energy_death_count_last_100": tail["energy_death_count"].mean(),
             "final_exploration_tendency":
                 df["average_exploration_tendency"].iloc[-1],
             "final_site_fidelity":
@@ -321,7 +325,8 @@ def main() -> None:
         experiment_dir / "birth_death_mean_std.png",
         metrics=[
             ("birth_rate", "Birth Rate"),
-            ("death_rate", "Death Rate"),
+            ("age_death_rate", "Age Death Rate"),
+            ("energy_death_rate", "Energy Death Rate"),
         ],
         title="Birth and Death Rates Across Seeds",
         ylabel="Rate"
@@ -378,7 +383,8 @@ def main() -> None:
         experiment_dir / "birth_death_counts_mean_std.png",
         metrics=[
             ("birth_count", "Birth Count"),
-            ("death_count", "Death Count"),
+            ("age_death_count", "Age Death Count"),
+            ("energy_death_count", "Energy Death Count"),
         ],
         title="Birth and Death Counts Across Seeds",
         ylabel="Count"

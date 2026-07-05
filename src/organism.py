@@ -339,6 +339,33 @@ class Organism:
         
         return child
     
+    def death_cause(self, max_age: int) -> Optional[str]:
+        """
+        死亡原因を返す。
+
+        Returns:
+            "energy": エネルギー枯渇死
+            "age": 寿命死
+            None: 生存
+
+        同一ステップで両条件を満たす場合は、
+        エネルギー死を優先する。
+        """
+        effective_lifespan = (
+            self.lifespan
+            if self.lifespan is not None
+            else max_age
+        )
+
+        # エネルギー死を優先
+        if self.energy <= 0:
+            return "energy"
+
+        if self.age >= effective_lifespan:
+            return "age"
+
+        return None
+
     def is_dead(self, max_age: int) -> bool:
         """
         個体が死亡しているか判定
@@ -354,16 +381,7 @@ class Organism:
         個体固有の lifespan が設定されている場合はそれを使用し、
         未設定の場合は従来の max_age を使用する。
         """
-        effective_lifespan = (
-            self.lifespan
-            if self.lifespan is not None
-            else max_age
-        )
-
-        return (
-            self.energy <= 0
-            or self.age >= effective_lifespan
-        )
+        return self.death_cause(max_age) is not None
     
     def age_one_step(self) -> None:
         """年齢を1増やす"""

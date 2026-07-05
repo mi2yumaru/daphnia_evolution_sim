@@ -342,14 +342,35 @@ class Simulation:
                 )
                 new_offspring.append(child)
         
-        # 6. 死亡個体を除く
-        self.organisms = [
-            org for org in self.organisms
-            if not org.is_dead(org_config["max_age"])
-        ]
-        
-        # 死亡数を計算
-        death_count = population_before - len(self.organisms)
+        # 6. 死亡個体を原因別に集計し、生存個体のみ残す
+        survivors: List[Organism] = []
+
+        age_death_count = 0
+        energy_death_count = 0
+
+        for organism in self.organisms:
+            cause = organism.death_cause(
+                org_config["max_age"]
+            )
+
+            if cause == "energy":
+                energy_death_count += 1
+
+            elif cause == "age":
+                age_death_count += 1
+
+            else:
+                survivors.append(organism)
+
+
+        self.organisms = survivors
+
+        # 総死亡数
+        death_count = (
+            age_death_count
+            + energy_death_count
+        )
+
         birth_count = len(new_offspring)
         
         # 7. 新しい子個体を追加する
@@ -401,6 +422,16 @@ class Simulation:
         # birth_rate / death_rate はステップ開始時の個体数に対する割合
         birth_rate = birth_count / population_before if population_before > 0 else 0.0
         death_rate = death_count / population_before if population_before > 0 else 0.0
+        age_death_rate = (
+            age_death_count / population_before
+            if population_before > 0
+            else 0.0
+        )
+        energy_death_rate = (
+            energy_death_count / population_before
+            if population_before > 0
+            else 0.0
+        )
 
         if population_size > 0:
             average_energy = sum(org.energy for org in self.organisms) / population_size
@@ -466,6 +497,8 @@ class Simulation:
             average_age=average_age,
             birth_count=birth_count,
             death_count=death_count,
+            age_death_count=age_death_count,
+            energy_death_count=energy_death_count,
             move_count=move_count,
             move_rate=move_rate,
             non_move_count=non_move_count,
@@ -482,6 +515,8 @@ class Simulation:
             mean_consumers_per_shared_food=mean_consumers_per_shared_food,
             birth_rate=birth_rate,
             death_rate=death_rate,
+            age_death_rate=age_death_rate,
+            energy_death_rate=energy_death_rate,
             average_exploration_tendency=average_exploration_tendency,
             std_exploration_tendency=std_exploration_tendency,
             min_exploration_tendency=min_exploration_tendency,

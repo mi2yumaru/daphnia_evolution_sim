@@ -28,6 +28,8 @@ class SimulationLogger:
         average_age: float,
         birth_count: int,
         death_count: int,
+        age_death_count: int,
+        energy_death_count: int,
         move_count: int,
         move_rate: float,
         non_move_count: int,
@@ -44,6 +46,8 @@ class SimulationLogger:
         mean_consumers_per_shared_food: float,
         birth_rate: float,
         death_rate: float,
+        age_death_rate: float,
+        energy_death_rate: float,
         average_exploration_tendency: float,
         std_exploration_tendency: float,
         min_exploration_tendency: float,
@@ -72,6 +76,8 @@ class SimulationLogger:
             average_age: 個体群の平均年齢
             birth_count: このステップで生まれた個体数
             death_count: このステップで死んだ個体数
+            age_death_count: このステップで年齢による死亡数
+            energy_death_count: このステップでエネルギーによる死亡数
             move_count: このステップで移動した個体数
             move_rate: 移動率
             non_move_count: このステップで移動しなかった個体数
@@ -88,6 +94,8 @@ class SimulationLogger:
             mean_consumers_per_shared_food: 共有餌1マスあたりの平均摂食個体数
             birth_rate: 繁殖率
             death_rate: 死亡率
+            age_death_rate: 年齢による死亡率
+            energy_death_rate: エネルギーによる死亡率
             std_exploration_tendency: 探索傾向の標準偏差
             min_exploration_tendency: 探索傾向の最小値
             max_exploration_tendency: 探索傾向の最大値
@@ -109,6 +117,8 @@ class SimulationLogger:
             "average_age": average_age,
             "birth_count": birth_count,
             "death_count": death_count,
+            "age_death_count": age_death_count,
+            "energy_death_count": energy_death_count,
             "move_count": move_count,
             "move_rate": move_rate,
             "non_move_count": non_move_count,
@@ -125,6 +135,8 @@ class SimulationLogger:
             "mean_consumers_per_shared_food": mean_consumers_per_shared_food,
             "birth_rate": birth_rate,
             "death_rate": death_rate,
+            "age_death_rate": age_death_rate,
+            "energy_death_rate": energy_death_rate,
             "average_exploration_tendency": average_exploration_tendency,
             "std_exploration_tendency": std_exploration_tendency,
             "min_exploration_tendency": min_exploration_tendency,
