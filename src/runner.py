@@ -56,8 +56,28 @@ def run_single_simulation(
     df = sim.logger.to_dataframe()
 
     if save_csv:
+        # 通常のstep単位ログ
         csv_path = output_dir / "log.csv"
         sim.logger.save_csv(str(csv_path))
+
+        # 全個体の系譜情報を保存
+        lineage_df = pd.DataFrame(
+            list(
+                sim.lineage_records.values()
+            )
+        )
+
+        if not lineage_df.empty:
+            lineage_df = (
+                lineage_df
+                .sort_values("organism_id")
+                .reset_index(drop=True)
+            )
+
+        lineage_df.to_csv(
+            output_dir / "lineage.csv",
+            index=False,
+        )
 
     if save_plots:
         save_all_single_run_plots(df, output_dir)

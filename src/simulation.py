@@ -5,7 +5,7 @@ Simulation クラスが各ステップでの環境、個体群、食料の更新
 """
 
 from typing import List, Dict, Any, Tuple
-from collections import defaultdict
+from collections import defaultdict, Counter
 import numpy as np
 try:
     from .organism import Organism
@@ -130,6 +130,13 @@ class Simulation:
                 raise ValueError(
                     "lifespan_min must be <= lifespan_max"
                 )
+            
+        # 個体ID管理
+        self.next_organism_id: int = 0
+
+        # 全個体の系譜履歴
+        # 死亡して self.organisms から削除された後も記録を保持する
+        self.lineage_records: Dict[int, Dict[str, Any]] = {}
 
         # 個体群の初期化
         self.organisms: List[Organism] = []
@@ -139,6 +146,8 @@ class Simulation:
 
             # 個体固有の寿命を生成
             lifespan = self._sample_lifespan()
+
+            organism_id = self._allocate_organism_id()
 
             if randomize_initial_age:
                 # lifespan以上の年齢を生成しない
@@ -158,8 +167,16 @@ class Simulation:
                 genome_length=gen_config["genome_length"],
                 initial_age=initial_age,
                 lifespan=lifespan,
+
+                organism_id=organism_id,
+                parent_id=None,
+                founder_id=organism_id,
+                generation=0,
+                birth_step=0,
             )
             self.organisms.append(organism)
+
+            self._register_lineage(organism)
         
         # ロガーの初期化
         self.logger = SimulationLogger()
@@ -173,6 +190,46 @@ class Simulation:
         # 前ステップの生死情報（リアルタイム可視化用）
         self.last_birth_count = 0
         self.last_death_count = 0
+
+    def _allocate_organism_id(self) -> int:
+        """
+        新しい個体IDを発行する。
+        """
+        organism_id = self.next_organism_id
+        self.next_organism_id += 1
+
+        return organism_id
+    
+    def _register_lineage(
+        self,
+        organism: Organism,
+    ) -> None:
+        """
+        個体の出生情報を系譜レジストリに登録する。
+        """
+
+        self.lineage_records[
+            organism.organism_id
+        ] = {
+            "organism_id": organism.organism_id,
+            "parent_id": organism.parent_id,
+            "founder_id": organism.founder_id,
+            "generation": organism.generation,
+            "birth_step": organism.birth_step,
+
+            "birth_x": organism.x,
+            "birth_y": organism.y,
+
+            "lifespan": organism.lifespan,
+
+            "birth_exploration_tendency": organism.phenotype["exploration_tendency"],
+            "birth_site_fidelity": organism.phenotype["site_fidelity"],
+            "birth_risk_tolerance": organism.phenotype["risk_tolerance"],
+            "birth_reproduction_timing": organism.phenotype["reproduction_timing"],
+
+            "death_step": None,
+            "death_cause": None,
+        }
     
     def _sample_lifespan(self) -> int:
         """
@@ -330,6 +387,7 @@ class Simulation:
             # 5. 繁殖可能なら子個体を作る
             if organism.can_reproduce(org_config["reproduction_threshold"]):
                 offspring_lifespan = self._sample_lifespan()
+                child_organism_id = self._allocate_organism_id()
                 
                 child = organism.reproduce(
                     width=env_config["width"],
@@ -339,7 +397,10 @@ class Simulation:
                     mutation_rate=gen_config["mutation_rate"],
                     genome_length=gen_config["genome_length"],
                     offspring_lifespan=offspring_lifespan,
+                    child_organism_id=child_organism_id,
+                    birth_step=self.current_step,
                 )
+                self._register_lineage(child)
                 new_offspring.append(child)
         
         # 6. 死亡個体を原因別に集計し、生存個体のみ残す
@@ -352,6 +413,21 @@ class Simulation:
             cause = organism.death_cause(
                 org_config["max_age"]
             )
+
+            if cause is not None:
+                record = self.lineage_records.get(
+                    organism.organism_id
+                )
+
+                if (
+                    record is not None
+                    and record["death_step"] is None
+                ):
+                    record["death_step"] = (
+                        self.current_step
+                    )
+
+                    record["death_cause"] = cause
 
             if cause == "energy":
                 energy_death_count += 1
@@ -488,6 +564,46 @@ class Simulation:
 
             min_reproduction_timing = 0.0
             max_reproduction_timing = 0.0
+
+        # 系譜統計を計算
+        if population_size > 0:
+            lineage_counts = Counter(
+                organism.founder_id
+                for organism in self.organisms
+            )
+
+            # 現在生存しているFounder系統数
+            active_lineage_count = len(
+                lineage_counts
+            )
+
+            # 最大系統が現在の集団に占める割合
+            largest_lineage_share = (
+                max(lineage_counts.values())
+                / population_size
+            )
+
+            # 現在の集団の平均世代
+            average_generation = (
+                sum(
+                    organism.generation
+                    for organism in self.organisms
+                )
+                / population_size
+            )
+
+            # 現在生存している個体の最大世代
+            max_generation = max(
+                organism.generation
+                for organism in self.organisms
+            )
+
+        else:
+            active_lineage_count = 0
+            largest_lineage_share = 0.0
+            average_generation = 0.0
+            max_generation = 0
+
         
         self.logger.record(
             step=self.current_step,
@@ -532,7 +648,11 @@ class Simulation:
             average_reproduction_timing=average_reproduction_timing,
             std_reproduction_timing=std_reproduction_timing,
             min_reproduction_timing=min_reproduction_timing,
-            max_reproduction_timing=max_reproduction_timing
+            max_reproduction_timing=max_reproduction_timing,
+            active_lineage_count=active_lineage_count,
+            largest_lineage_share=largest_lineage_share,
+            average_generation=average_generation,
+            max_generation=max_generation,
         )
         
         # 前ステップの生死情報を更新

@@ -63,7 +63,11 @@ class SimulationLogger:
         average_reproduction_timing: float,
         std_reproduction_timing: float,
         min_reproduction_timing: float,
-        max_reproduction_timing: float
+        max_reproduction_timing: float,
+        active_lineage_count: int,
+        largest_lineage_share: float,
+        average_generation: float,
+        max_generation: int,
     ) -> None:
         """
         1ステップ分のデータを記録
@@ -108,6 +112,10 @@ class SimulationLogger:
             std_reproduction_timing: 繁殖タイミングの標準偏差
             min_reproduction_timing: 繁殖タイミングの最小値
             max_reproduction_timing: 繁殖タイミングの最大値
+            active_lineage_count: 現在生存しているFounder系統数
+            largest_lineage_share: 最大系統が集団に占める割合
+            average_generation: 現在の集団の平均世代
+            max_generation: 現在生存している個体の最大世代
         """
         self.logs.append({
             "step": step,
@@ -152,7 +160,11 @@ class SimulationLogger:
             "average_reproduction_timing": average_reproduction_timing,
             "std_reproduction_timing": std_reproduction_timing,
             "min_reproduction_timing": min_reproduction_timing,
-            "max_reproduction_timing": max_reproduction_timing
+            "max_reproduction_timing": max_reproduction_timing,
+            "active_lineage_count": active_lineage_count,
+            "largest_lineage_share": largest_lineage_share,
+            "average_generation": average_generation,
+            "max_generation": max_generation
         })
     
     def to_dataframe(self) -> pd.DataFrame:

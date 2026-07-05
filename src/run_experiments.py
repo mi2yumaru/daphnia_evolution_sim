@@ -201,7 +201,36 @@ def create_summary(all_logs: list[pd.DataFrame]) -> pd.DataFrame:
                 df["average_reproduction_timing"].iloc[-1],
         })
 
-    return pd.DataFrame(rows)
+    summary_df = pd.DataFrame(rows)
+
+    lineage_rows = []
+
+    for df in all_logs:
+        seed = int(df["seed"].iloc[0])
+
+        tail_size = min(100,len(df),)
+
+        tail = df.tail(tail_size)
+
+        lineage_rows.append({
+            "seed": seed,
+            "final_active_lineage_count": df["active_lineage_count"].iloc[-1],
+            "mean_active_lineage_count_last_100": tail["active_lineage_count"].mean(),
+            "final_largest_lineage_share": df["largest_lineage_share"].iloc[-1],
+            "mean_largest_lineage_share_last_100": tail["largest_lineage_share"].mean(),
+            "final_average_generation": df["average_generation"].iloc[-1],
+            "final_max_generation": df["max_generation"].iloc[-1],
+        })
+
+    lineage_summary_df = pd.DataFrame(lineage_rows)
+
+    summary_df = summary_df.merge(
+        lineage_summary_df,
+        on="seed",
+        how="left",
+    )
+
+    return summary_df
 
 def main() -> None:
     args = parse_args()
@@ -388,6 +417,56 @@ def main() -> None:
         ],
         title="Birth and Death Counts Across Seeds",
         ylabel="Count"
+    )
+
+    # 生存Founder系統数
+    plot_aggregate_mean_std(
+        aggregate_df,
+        experiment_dir
+        / "active_lineage_count_mean_std.png",
+        metrics=[
+            (
+                "active_lineage_count",
+                "Active Lineage Count",
+            ),
+        ],
+        title="Active Lineages Across Seeds",
+        ylabel="Lineage Count",
+    )
+
+    # 最大系統シェア
+    plot_aggregate_mean_std(
+        aggregate_df,
+        experiment_dir
+        / "largest_lineage_share_mean_std.png",
+        metrics=[
+            (
+                "largest_lineage_share",
+                "Largest Lineage Share",
+            ),
+        ],
+        title="Largest Lineage Share Across Seeds",
+        ylabel="Share",
+        fixed_ylim=(0.0, 1.0),
+    )
+
+    # 世代進行
+    plot_aggregate_mean_std(
+        aggregate_df,
+        experiment_dir
+        / "generation_mean_std.png",
+        metrics=[
+            (
+                "average_generation",
+                "Average Generation",
+            ),
+            (
+                "max_generation",
+                "Max Generation",
+            ),
+        ],
+        title="Generation Progress Across Seeds",
+        ylabel="Generation",
     )
 
     print("\n=== 複数seed実験完了 ===")

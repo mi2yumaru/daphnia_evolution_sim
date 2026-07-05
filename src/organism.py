@@ -30,6 +30,11 @@ class Organism:
         genome: Optional[np.ndarray] = None,
         initial_age: int = 0,
         lifespan: Optional[int] = None,
+        organism_id: int = -1,
+        parent_id: Optional[int] = None,
+        founder_id: Optional[int] = None,
+        generation: int = 0,
+        birth_step: int = 0,
     ):
         """
         個体を初期化
@@ -42,6 +47,11 @@ class Organism:
             genome: ゲノム配列。Noneの場合は0/1ランダムで初期化
             initial_age: 初期年齢。デフォルトは0
             lifespan: 個体の寿命。Noneの場合は死亡判定時のmax_ageを使用
+            organism_id: 個体のID
+            parent_id: 親個体のID
+            founder_id: 元祖個体のID
+            generation: 初期世代を0とした世代数
+            birth_step: 生誕ステップ
         """
 
         if initial_age < 0:
@@ -60,6 +70,23 @@ class Organism:
             )
 
         self.lifespan: Optional[int] = lifespan
+
+        if organism_id < 0:
+            raise ValueError(
+                f"organism_id must be non-negative, got {organism_id}"
+            )
+
+        self.organism_id: int = organism_id
+        self.parent_id: Optional[int] = parent_id
+
+        self.founder_id: int = (
+            organism_id
+            if founder_id is None
+            else founder_id
+        )
+
+        self.generation: int = generation
+        self.birth_step: int = birth_step
 
         if genome is None:
             # ランダムな0/1配列で初期化
@@ -289,6 +316,8 @@ class Organism:
         reproduction_cost: float,
         mutation_rate: float,
         genome_length: int,
+        child_organism_id: int,
+        birth_step: int,
         offspring_lifespan: Optional[int] = None,
     ) -> "Organism":
         """
@@ -305,7 +334,9 @@ class Organism:
             mutation_rate: ゲノムの各ビットについて、変異する確率
             genome_length: ゲノム長
             offspring_lifespan: 子個体の寿命。Noneの場合は死亡判定時のmax_ageを使用
-        
+            child_organism_id: 子個体のID
+            birth_step: 生誕ステップ
+
         Returns:
             Organism: 生成された子個体
         """
@@ -335,6 +366,11 @@ class Organism:
             genome=child_genome,
             initial_age=0,
             lifespan=offspring_lifespan,
+            organism_id=child_organism_id,
+            parent_id=self.organism_id,
+            founder_id=self.founder_id,
+            generation=self.generation + 1,
+            birth_step=birth_step,
         )
         
         return child
