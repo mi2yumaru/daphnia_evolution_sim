@@ -256,28 +256,37 @@ class Simulation:
         シミュレーションを1ステップ進める
         
         以下の順序で処理を実行：
-        1. 各個体の age を増やす
-        2. 個体を移動させる
-        3. 移動先に餌があれば食べる
-        4. エネルギーを消費する
-        5. 繁殖可能なら子個体を作る
-        6. 死亡個体を除く
-        7. 新しい子個体を追加する
-        8. 餌を再生成する
+        1. 第2ステップ以降の場合、餌を再生成する
+        2. 各個体の age を増やす
+        3. 個体を移動させる
+        4. 移動先に餌があれば食べる
+        5. エネルギーを消費する
+        6. 繁殖可能なら子個体を作る
+        7. 死亡個体を除く
+        8. 新しい子個体を追加する
         9. 統計情報をログに記録する
         """
         org_config = self.config["organism"]
         env_config = self.config["environment"]
         gen_config = self.config["genetics"]
         
+        # 第2ステップ以降は、個体が行動する前に餌を再生成する
+        # current_step は0始まりなので、
+        # current_step == 0 が第1ステップ、
+        # current_step == 1 が第2ステップに対応する
+        if self.current_step > 0:
+            self.environment.respawn_food(
+                env_config["food_respawn_rate"]
+            )
+
         # ステップ前の個体数（死亡数を計算するため）
         population_before = len(self.organisms)
         
-        # 1. 各個体の age を増やす
+        # 2. 各個体の age を増やす
         for organism in self.organisms:
             organism.age_one_step()
         
-        # 2-5. 個体の行動を処理
+        # 3-6. 個体の行動を処理
         new_offspring: List[Organism] = []
         move_count = 0
         eat_count = 0
@@ -305,7 +314,7 @@ class Simulation:
         movement_records = []
 
         # -------------------------
-        # 2. 移動フェーズ
+        # 3. 移動フェーズ
         # -------------------------
         for organism in self.organisms:
             low_energy_threshold = org_config["reproduction_threshold"] * behavior_settings["low_energy_threshold_ratio"]
@@ -325,7 +334,7 @@ class Simulation:
             movement_records.append((organism, moved))
 
         # -------------------------
-        # 3. 摂食フェーズ
+        # 4. 摂食フェーズ
         #    同じ餌マスにいる個体で food_energy を等分する
         # -------------------------
         eating_candidates: Dict[Tuple[int, int], List[tuple[Organism, bool]]] = defaultdict(list)
@@ -373,7 +382,7 @@ class Simulation:
 
 
         # -------------------------
-        # 4-5. エネルギー消費・繁殖フェーズ
+        # 5-6. エネルギー消費・繁殖フェーズ
         # -------------------------
         for organism, moved in movement_records:
             # living_cost は毎ステップ必ず消費
@@ -403,7 +412,7 @@ class Simulation:
                 self._register_lineage(child)
                 new_offspring.append(child)
         
-        # 6. 死亡個体を原因別に集計し、生存個体のみ残す
+        # 7. 死亡個体を原因別に集計し、生存個体のみ残す
         survivors: List[Organism] = []
 
         age_death_count = 0
@@ -449,11 +458,8 @@ class Simulation:
 
         birth_count = len(new_offspring)
         
-        # 7. 新しい子個体を追加する
+        # 8. 新しい子個体を追加する
         self.organisms.extend(new_offspring)
-        
-        # 8. 餌を再生成する
-        self.environment.respawn_food(env_config["food_respawn_rate"])
         
         # 9. 統計情報をログに記録する
         population_size = len(self.organisms)
