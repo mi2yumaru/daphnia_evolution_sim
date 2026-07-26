@@ -38,8 +38,34 @@ class LiveVisualizer:
         
         # Figure と Axis を作成
         self.fig, self.ax = plt.subplots(figsize=(10, 10))
-        self.fig.suptitle("Daphnia Evolution Simulation", fontsize=16)
-        
+
+        # -------------------------
+        # メインタイトル
+        # -------------------------
+        self.fig.suptitle(
+            "Daphnia Evolution Simulation",
+            fontsize=15,
+            y=0.975,
+        )
+
+        # -------------------------
+        # シミュレーション情報表示
+        # -------------------------
+        self.status_text = self.fig.text(
+            0.5,
+            0.925,
+            "",
+            ha="center",
+            va="top",
+            fontsize=10.5,
+            linespacing=1.5,
+        )
+
+        # タイトル・情報表示用のスペースを上部に確保
+        self.fig.subplots_adjust(
+            top=0.80
+        )
+
         # Axis の設定
         self.ax.set_xlim(-0.5, width - 0.5)
         self.ax.set_ylim(-0.5, height - 0.5)
@@ -48,16 +74,7 @@ class LiveVisualizer:
         self.ax.set_xlabel("X")
         self.ax.set_ylabel("Y")
         self.ax.grid(True, alpha=0.3)
-        
-        # タイトル用のテキストオブジェクト
-        self.title_text = self.ax.text(
-            0.5, -0.08,
-            "",
-            transform=self.ax.transAxes,
-            ha="center",
-            fontsize=12
-        )
-        
+
         # 描画用のオブジェクト
         self.food_scatter = None
         self.organism_scatter = None
@@ -103,19 +120,23 @@ class LiveVisualizer:
                 c="blue", s=50, alpha=0.7, marker="o", label="Organism"
             )
         
-        # タイトルに統計情報を表示
-        title_str = (
+        # シミュレーション情報を表示
+        status_str = (
             f"Step: {state['step']} | "
             f"Year: {state['simulation_year']} | "
             f"Day: {state['day_of_year']} | "
             f"Food Respawn Rate: {state['food_respawn_rate']:.5f}\n"
-            f"Population: {state['population_size']} "
-            f"(B:{state['birth_count']} D:{state['death_count']}) | "
-            f"Food: {state['food_count']} | "
+
+            f"Population: {state['population_size']} | "
+            f"Birth: {state['birth_count']} | "
+            f"Death: {state['death_count']} | "
+            f"Food: {state['food_count']}\n"
+
             f"Avg Energy: {state['average_energy']:.2f} | "
             f"Avg Age: {state['average_age']:.2f}"
         )
-        self.ax.set_title(title_str, fontsize=11, pad=20)
+
+        self.status_text.set_text(status_str)
         
         # legendを追加
         self.ax.legend(loc="upper right")
