@@ -17,6 +17,119 @@ except ImportError:
     from live_visualizer import run_live_visualization
     from visualizer import save_all_single_run_plots
 
+def resolve_total_steps(config: dict[str, Any]) -> int:
+    """
+    simulation設定から総実行ステップ数を決定する。
+
+    duration_mode == "steps":
+        simulation.stepsをそのまま使用する。
+
+    duration_mode == "years":
+        duration_years × days_per_year × steps_per_day
+        により総実行ステップ数を計算する。
+
+    計算した値はsimulation.stepsへ格納する。
+    """
+    if "simulation" not in config:
+        raise KeyError(
+            "設定に 'simulation' セクションがありません。"
+        )
+
+    sim_config = config["simulation"]
+
+    # 古い設定ファイルとの互換性を保つため、
+    # duration_modeがない場合はstepsモードとして扱う
+    duration_mode = str(
+        sim_config.get("duration_mode", "steps")
+    ).strip().lower()
+
+    if duration_mode == "steps":
+        if "steps" not in sim_config:
+            raise KeyError(
+                "duration_modeが'steps'ですが、"
+                "simulation.stepsが設定されていません。"
+            )
+
+        try:
+            total_steps = int(sim_config["steps"])
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "simulation.stepsには整数を指定してください。"
+            ) from exc
+
+        if total_steps <= 0:
+            raise ValueError(
+                "simulation.stepsは1以上にしてください。"
+            )
+
+    elif duration_mode == "years":
+        required_keys = (
+            "duration_years",
+            "days_per_year",
+            "steps_per_day",
+        )
+
+        missing_keys = [
+            key
+            for key in required_keys
+            if key not in sim_config
+        ]
+
+        if missing_keys:
+            raise KeyError(
+                "duration_modeが'years'ですが、"
+                f"次の設定がありません: {missing_keys}"
+            )
+
+        try:
+            duration_years = int(
+                sim_config["duration_years"]
+            )
+            days_per_year = int(
+                sim_config["days_per_year"]
+            )
+            steps_per_day = int(
+                sim_config["steps_per_day"]
+            )
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "duration_years、days_per_year、"
+                "steps_per_dayには整数を指定してください。"
+            ) from exc
+
+        if duration_years <= 0:
+            raise ValueError(
+                "simulation.duration_yearsは1以上にしてください。"
+            )
+
+        if days_per_year <= 0:
+            raise ValueError(
+                "simulation.days_per_yearは1以上にしてください。"
+            )
+
+        if steps_per_day <= 0:
+            raise ValueError(
+                "simulation.steps_per_dayは1以上にしてください。"
+            )
+
+        total_steps = (
+            duration_years
+            * days_per_year
+            * steps_per_day
+        )
+
+    else:
+        raise ValueError(
+            "simulation.duration_modeには"
+            "'steps'または'years'を指定してください。"
+        )
+
+    # Simulation.run()はsimulation.stepsを参照するため、
+    # 決定した総ステップ数を実行用設定へ格納する
+    sim_config["steps"] = total_steps
+
+    return total_steps
+
 def build_lineage_strategy_summary(
     lineage_df: pd.DataFrame,
 ) -> pd.DataFrame:
@@ -206,8 +319,30 @@ def run_single_simulation(
     run_config = deepcopy(config)
     run_config["simulation"]["random_seed"] = seed
 
+    # ステップ直接指定または年数指定から、
+    # 実際に実行する総ステップ数を決定する
+    total_steps = resolve_total_steps(run_config)
+
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
+
+    duration_mode = run_config["simulation"].get(
+        "duration_mode",
+        "steps",
+    )
+
+    if duration_mode == "years":
+        duration_years = run_config["simulation"][
+            "duration_years"
+        ]
+        print(
+            f"実行期間: {duration_years}年 "
+            f"({total_steps:,}ステップ)"
+        )
+    else:
+        print(
+            f"実行期間: {total_steps:,}ステップ"
+        )
 
     sim = Simulation(run_config)
 

@@ -1,5 +1,16 @@
 simulation:
+  # 実行期間の指定方法
+  # "steps": stepsで直接指定
+  # "years": duration_yearsから総ステップ数を自動計算
+  duration_mode: "steps"
+
+  # duration_modeが"steps"のときに使用
   steps: 1000
+  # duration_modeが"years"のときに使用
+  duration_years: 1
+  days_per_year: 365
+  steps_per_day: 10
+
   random_seed: 42
   output_csv: "results/log.csv"
   population_plot: "results/population.png"
