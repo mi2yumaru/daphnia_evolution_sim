@@ -28,6 +28,11 @@ class Simulation:
     設定に基づいて初期化し、各ステップの環境更新、個体の行動、ログ記録を行う
     """
     
+    MONTH_LENGTHS = (
+        31, 28, 31, 30, 31, 30,
+        31, 31, 30, 31, 30, 31,
+    )
+
     def __init__(self, config: Dict[str, Any]):
         """
         シミュレーションを初期化
@@ -252,7 +257,18 @@ class Simulation:
         # リアルタイム可視化などで参照する現在の季節環境
         self.current_simulation_year = 1
         self.current_day_of_year = 1
-        self.current_food_respawn_rate = self._get_food_respawn_rate(1)
+        (
+            self.current_month,
+            self.current_day_of_month,
+        ) = self._day_of_year_to_month_day(
+            self.current_day_of_year
+        )
+
+        self.current_food_respawn_rate = (
+            self._get_food_respawn_rate(
+                self.current_day_of_year
+            )
+        )
 
         # 前ステップの生死情報（リアルタイム可視化用）
         self.last_birth_count = 0
@@ -449,6 +465,41 @@ class Simulation:
             day_of_year,
         )
 
+    def _day_of_year_to_month_day(
+        self,
+        day_of_year: int,
+    ) -> tuple[int, int]:
+        """
+        1～365の日番号を月・日に変換する。
+
+        例:
+            1   -> (1, 1)
+            32  -> (2, 1)
+            60  -> (3, 1)
+            365 -> (12, 31)
+        """
+
+        if not 1 <= day_of_year <= 365:
+            raise ValueError(
+                f"day_of_year must be between 1 and 365: "
+                f"{day_of_year}"
+            )
+
+        remaining_day = day_of_year
+
+        for month, month_length in enumerate(
+            self.MONTH_LENGTHS,
+            start=1,
+        ):
+            if remaining_day <= month_length:
+                return month, remaining_day
+
+            remaining_day -= month_length
+
+        # 通常ここには到達しない
+        raise RuntimeError(
+            f"Failed to convert day_of_year: {day_of_year}"
+        )
 
     def _get_food_respawn_rate(
         self,
@@ -498,10 +549,15 @@ class Simulation:
         # 現在の年・日・餌再生成率
         # -------------------------
 
-        (
-            simulation_year,
-            day_of_year,
-        ) = self._get_calendar_position()
+        simulation_year,day_of_year = (
+            self._get_calendar_position()
+        )
+
+        month, day_of_month = (
+            self._day_of_year_to_month_day(
+                day_of_year
+            )
+        )
 
         current_food_respawn_rate = (
             self._get_food_respawn_rate(
@@ -512,6 +568,8 @@ class Simulation:
         # 現在ステップで実際に使用する季節環境を保持
         self.current_simulation_year = simulation_year
         self.current_day_of_year = day_of_year
+        self.current_month = month
+        self.current_day_of_month = day_of_month
         self.current_food_respawn_rate = current_food_respawn_rate
 
         # 第2ステップ以降は、個体が行動する前に餌を再生成する
@@ -859,6 +917,8 @@ class Simulation:
             step=self.current_step,
             simulation_year=simulation_year,
             day_of_year=day_of_year,
+            month=month,
+            day_of_month=day_of_month,
             food_respawn_rate=current_food_respawn_rate,
             population_size=population_size,
             food_count=food_count,
@@ -973,6 +1033,8 @@ class Simulation:
             "step": self.current_step,
             "simulation_year": self.current_simulation_year,
             "day_of_year": self.current_day_of_year,
+            "month": self.current_month,
+            "day_of_month": self.current_day_of_month,
             "food_respawn_rate": self.current_food_respawn_rate,
             "organism_positions": organism_positions,
             "organism_energies": organism_energies,

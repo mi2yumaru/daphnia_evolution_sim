@@ -24,6 +24,8 @@ class SimulationLogger:
         step: int,
         simulation_year: int,
         day_of_year: int,
+        month: int,
+        day_of_month: int,
         food_respawn_rate: float,
         population_size: int,
         food_count: int,
@@ -79,6 +81,8 @@ class SimulationLogger:
             step: ステップ数
             simulation_year: 現在の年
             day_of_year: 現在の年内日数
+            month: 現在の月
+            day_of_month: 現在の月内日数
             food_respawn_rate: 現在の餌再生成率
             population_size: 現在の個体数
             food_count: 現在の食料数
@@ -127,6 +131,8 @@ class SimulationLogger:
             "step": step,
             "simulation_year": simulation_year,
             "day_of_year": day_of_year,
+            "month": month,
+            "day_of_month": day_of_month,
             "food_respawn_rate": food_respawn_rate,
             "population_size": population_size,
             "food_count": food_count,

@@ -124,7 +124,8 @@ class LiveVisualizer:
         status_str = (
             f"Step: {state['step']} | "
             f"Year: {state['simulation_year']} | "
-            f"Day: {state['day_of_year']} | "
+            f"Day: {state['day_of_year']} "
+            f"({state['month']}/{state['day_of_month']}) | "
             f"Food Respawn Rate: {state['food_respawn_rate']:.5f}\n"
 
             f"Population: {state['population_size']} | "
