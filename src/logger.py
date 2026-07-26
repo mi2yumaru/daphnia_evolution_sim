@@ -22,6 +22,9 @@ class SimulationLogger:
     def record(
         self,
         step: int,
+        simulation_year: int,
+        day_of_year: int,
+        food_respawn_rate: float,
         population_size: int,
         food_count: int,
         average_energy: float,
@@ -74,6 +77,9 @@ class SimulationLogger:
         
         Args:
             step: ステップ数
+            simulation_year: 現在の年
+            day_of_year: 現在の年内日数
+            food_respawn_rate: 現在の餌再生成率
             population_size: 現在の個体数
             food_count: 現在の食料数
             average_energy: 個体群の平均エネルギー
@@ -119,6 +125,9 @@ class SimulationLogger:
         """
         self.logs.append({
             "step": step,
+            "simulation_year": simulation_year,
+            "day_of_year": day_of_year,
+            "food_respawn_rate": food_respawn_rate,
             "population_size": population_size,
             "food_count": food_count,
             "average_energy": average_energy,
@@ -164,7 +173,7 @@ class SimulationLogger:
             "active_lineage_count": active_lineage_count,
             "largest_lineage_share": largest_lineage_share,
             "average_generation": average_generation,
-            "max_generation": max_generation
+            "max_generation": max_generation,
         })
     
     def to_dataframe(self) -> pd.DataFrame:

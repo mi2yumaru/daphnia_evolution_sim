@@ -6,6 +6,8 @@ Simulation クラスが各ステップでの環境、個体群、食料の更新
 
 from typing import List, Dict, Any, Tuple
 from collections import defaultdict, Counter
+from pathlib import Path
+import csv
 import numpy as np
 try:
     from .organism import Organism
@@ -40,6 +42,66 @@ class Simulation:
         env_config = config["environment"]
         org_config = config["organism"]
         gen_config = config["genetics"]
+
+        # -------------------------
+        # 年間時間スケール
+        # -------------------------
+
+        self.steps_per_day = int(
+            sim_config.get("steps_per_day", 10)
+        )
+
+        self.days_per_year = int(
+            sim_config.get("days_per_year", 365)
+        )
+
+        if self.steps_per_day <= 0:
+            raise ValueError(
+                "simulation.steps_per_day must be greater than 0"
+            )
+
+        if self.days_per_year <= 0:
+            raise ValueError(
+                "simulation.days_per_year must be greater than 0"
+            )
+
+
+        # -------------------------
+        # 季節的な餌再生成設定
+        # -------------------------
+
+        seasonal_food_config = config.get(
+            "seasonal_food",
+            {},
+        )
+
+        self.seasonal_food_enabled = bool(
+            seasonal_food_config.get(
+                "enabled",
+                False,
+            )
+        )
+
+        self.seasonal_food_rates: Dict[int, float] = {}
+
+        if self.seasonal_food_enabled:
+            csv_path = Path(
+                seasonal_food_config["csv_path"]
+            )
+
+            # 相対パスならプロジェクトルート基準にする
+            if not csv_path.is_absolute():
+                project_root = (
+                    Path(__file__).resolve().parent.parent
+                )
+                csv_path = project_root / csv_path
+
+            self.seasonal_food_rates = (
+                self._load_seasonal_food_rates(
+                    csv_path,
+                    self.days_per_year,
+                )
+            )
         
         # 乱数シードの設定
         np.random.seed(sim_config["random_seed"])
@@ -250,6 +312,163 @@ class Simulation:
                 high=self.lifespan_max + 1,
             )
         )
+    
+    @staticmethod
+    def _load_seasonal_food_rates(
+        csv_path: Path,
+        days_per_year: int,
+    ) -> Dict[int, float]:
+        """
+        365日分の餌再生成率CSVを読み込む。
+
+        必須列:
+            day_of_year
+            food_respawn_rate
+        """
+
+        if not csv_path.exists():
+            raise FileNotFoundError(
+                f"Seasonal food data not found: {csv_path}"
+            )
+
+        rates: Dict[int, float] = {}
+
+        with csv_path.open(
+            "r",
+            encoding="utf-8",
+            newline="",
+        ) as f:
+
+            reader = csv.DictReader(f)
+
+            required_columns = {
+                "day_of_year",
+                "food_respawn_rate",
+            }
+
+            if reader.fieldnames is None:
+                raise ValueError(
+                    "Seasonal food CSV has no header."
+                )
+
+            missing_columns = (
+                required_columns
+                - set(reader.fieldnames)
+            )
+
+            if missing_columns:
+                raise ValueError(
+                    "Seasonal food CSV is missing columns: "
+                    f"{missing_columns}"
+                )
+
+            for row in reader:
+
+                day = int(
+                    row["day_of_year"]
+                )
+
+                rate = float(
+                    row["food_respawn_rate"]
+                )
+
+                if rate < 0.0:
+                    raise ValueError(
+                        "food_respawn_rate must be >= 0.0"
+                    )
+
+                rates[day] = rate
+
+        expected_days = set(
+            range(1, days_per_year + 1)
+        )
+
+        actual_days = set(
+            rates.keys()
+        )
+
+        if actual_days != expected_days:
+            missing_days = sorted(
+                expected_days - actual_days
+            )
+
+            extra_days = sorted(
+                actual_days - expected_days
+            )
+
+            raise ValueError(
+                "Seasonal food CSV must contain exactly "
+                f"day 1-{days_per_year}. "
+                f"missing={missing_days}, "
+                f"extra={extra_days}"
+            )
+
+        return rates
+
+    def _get_calendar_position(
+        self,
+    ) -> Tuple[int, int]:
+        """
+        current_stepから
+        シミュレーション年と年内日を求める。
+
+        Returns:
+            simulation_year:
+                1始まりの年
+            day_of_year:
+                1～365
+        """
+
+        steps_per_year = (
+            self.steps_per_day
+            * self.days_per_year
+        )
+
+        simulation_year = (
+            self.current_step
+            // steps_per_year
+            + 1
+        )
+
+        day_of_year = (
+            (
+                self.current_step
+                // self.steps_per_day
+            )
+            % self.days_per_year
+            + 1
+        )
+
+        return (
+            simulation_year,
+            day_of_year,
+        )
+
+
+    def _get_food_respawn_rate(
+        self,
+        day_of_year: int,
+    ) -> float:
+        """
+        現在日の餌再生成率を返す。
+
+        季節変動OFF:
+            environment.food_respawn_rate
+
+        季節変動ON:
+            CSVの365日周期
+        """
+
+        if self.seasonal_food_enabled:
+            return self.seasonal_food_rates[
+                day_of_year
+            ]
+
+        return float(
+            self.config["environment"][
+                "food_respawn_rate"
+            ]
+        )
 
     def step(self) -> None:
         """
@@ -270,13 +489,28 @@ class Simulation:
         env_config = self.config["environment"]
         gen_config = self.config["genetics"]
         
+        # -------------------------
+        # 現在の年・日・餌再生成率
+        # -------------------------
+
+        (
+            simulation_year,
+            day_of_year,
+        ) = self._get_calendar_position()
+
+        current_food_respawn_rate = (
+            self._get_food_respawn_rate(
+                day_of_year
+            )
+        )
+
         # 第2ステップ以降は、個体が行動する前に餌を再生成する
         # current_step は0始まりなので、
         # current_step == 0 が第1ステップ、
         # current_step == 1 が第2ステップに対応する
         if self.current_step > 0:
             self.environment.respawn_food(
-                env_config["food_respawn_rate"]
+                current_food_respawn_rate
             )
 
         # ステップ前の個体数（死亡数を計算するため）
@@ -613,6 +847,9 @@ class Simulation:
         
         self.logger.record(
             step=self.current_step,
+            simulation_year=simulation_year,
+            day_of_year=day_of_year,
+            food_respawn_rate=current_food_respawn_rate,
             population_size=population_size,
             food_count=food_count,
             average_energy=average_energy,

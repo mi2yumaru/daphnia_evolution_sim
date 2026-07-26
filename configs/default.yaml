@@ -2,7 +2,7 @@ simulation:
   # 実行期間の指定方法
   # "steps": stepsで直接指定
   # "years": duration_yearsから総ステップ数を自動計算
-  duration_mode: "steps"
+  duration_mode: "years"
 
   # duration_modeが"steps"のときに使用
   steps: 1000
@@ -39,8 +39,18 @@ environment:
   patch_spread_use_corners: false # 'spread' レイアウトで角(0,0),(0,H),(W,0),(W,H)を距離計算に含めるか
   patch_spread_step: 0          # spread レイアウトでの探索候補間隔(0=自動)
   initial_food_count: 500
+  # seasonal_food.enabled=false のときに使用
   food_respawn_rate: 0.02
   food_energy: 5
+
+seasonal_food:
+  # true:
+  #   霞ヶ浦の一次生産量に基づく365日周期で餌再生成率を変化
+  # false:
+  #   environment.food_respawn_rate の固定値を使用
+  enabled: true
+
+  csv_path: "data/kasumigaura_sta9_food_respawn_365.csv"
 
 behavior:
   low_energy_threshold_ratio: 0.5
@@ -77,6 +87,7 @@ organism:
 
   # randomize_lifespan=false の場合に使用する固定寿命
   max_age: 200
+  
   move_type: "moore"  # moore(8) or von_neumann(4)
 
 genetics:
