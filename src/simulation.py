@@ -249,6 +249,11 @@ class Simulation:
         # ステップ数
         self.current_step = 0
         
+        # リアルタイム可視化などで参照する現在の季節環境
+        self.current_simulation_year = 1
+        self.current_day_of_year = 1
+        self.current_food_respawn_rate = self._get_food_respawn_rate(1)
+
         # 前ステップの生死情報（リアルタイム可視化用）
         self.last_birth_count = 0
         self.last_death_count = 0
@@ -503,6 +508,11 @@ class Simulation:
                 day_of_year
             )
         )
+
+        # 現在ステップで実際に使用する季節環境を保持
+        self.current_simulation_year = simulation_year
+        self.current_day_of_year = day_of_year
+        self.current_food_respawn_rate = current_food_respawn_rate
 
         # 第2ステップ以降は、個体が行動する前に餌を再生成する
         # current_step は0始まりなので、
@@ -961,6 +971,9 @@ class Simulation:
         
         return {
             "step": self.current_step,
+            "simulation_year": self.current_simulation_year,
+            "day_of_year": self.current_day_of_year,
+            "food_respawn_rate": self.current_food_respawn_rate,
             "organism_positions": organism_positions,
             "organism_energies": organism_energies,
             "organism_states": organism_states,
