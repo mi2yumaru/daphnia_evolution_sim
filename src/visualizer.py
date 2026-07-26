@@ -400,6 +400,77 @@ def plot_birth_death_rates(df: pd.DataFrame, output_path: str) -> None:
     plt.savefig(output_path, dpi=150)
     plt.close()
 
+def plot_food_respawn_rate(
+    df: pd.DataFrame,
+    output_path: str | Path,
+) -> None:
+    """
+    餌再生成率の時系列グラフを生成して保存する。
+
+    Args:
+        df:
+            food_respawn_rate 列を含むシミュレーションログ
+        output_path:
+            保存先のファイルパス
+    """
+
+    if "food_respawn_rate" not in df.columns:
+        raise ValueError(
+            "food_respawn_rate column is missing from log data."
+        )
+
+    plt.figure(figsize=(10, 6))
+
+    plt.plot(
+        df["step"],
+        df["food_respawn_rate"],
+        linewidth=2,
+        label="Food Respawn Rate",
+    )
+
+    # 複数年実行の場合、年の境界を縦線で表示
+    if "simulation_year" in df.columns:
+        year_changed = (
+            df["simulation_year"]
+            .ne(df["simulation_year"].shift())
+        )
+
+        year_start_steps = (
+            df.loc[year_changed, "step"]
+            .iloc[1:]
+        )
+
+        for step in year_start_steps:
+            plt.axvline(
+                x=step,
+                linestyle="--",
+                alpha=0.35,
+            )
+
+    plt.title("Food Respawn Rate Over Time")
+    plt.xlabel("Step")
+    plt.ylabel("Food Respawn Rate")
+
+    y_max = float(
+        df["food_respawn_rate"].max()
+    )
+
+    plt.ylim(
+        0.0,
+        max(0.05, y_max * 1.1),
+    )
+
+    plt.legend(loc="upper right")
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+
+    plt.savefig(
+        output_path,
+        dpi=150,
+    )
+
+    plt.close()
+
 def save_all_single_run_plots(
     df: pd.DataFrame,
     output_dir: str | Path
@@ -498,6 +569,11 @@ def save_all_single_run_plots(
     plot_birth_death_rates(
         df,
         str(output_dir / "birth_death_rates.png")
+    )
+
+    plot_food_respawn_rate(
+        df,
+        output_dir / "food_respawn_rate.png",
     )
 
 def plot_aggregate_mean_std(

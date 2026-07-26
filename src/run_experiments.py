@@ -10,10 +10,16 @@ import yaml
 
 try:
     from src.runner import run_single_simulation
-    from src.visualizer import plot_aggregate_mean_std
+    from src.visualizer import (
+        plot_aggregate_mean_std,
+        plot_food_respawn_rate,
+    )
 except ImportError:
     from runner import run_single_simulation
-    from visualizer import plot_aggregate_mean_std
+    from visualizer import (
+        plot_aggregate_mean_std,
+        plot_food_respawn_rate,
+    )
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -348,6 +354,14 @@ def main() -> None:
         experiment_dir
         / "lineage_strategy_all_seeds.csv",
         index=False,
+    )
+
+    # -------------------------
+    # 餌再生成率
+    # -------------------------
+    plot_food_respawn_rate(
+        all_logs[0],
+        experiment_dir / "food_respawn_rate.png",
     )
 
     plot_aggregate_mean_std(
