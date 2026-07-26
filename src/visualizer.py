@@ -407,6 +407,10 @@ def plot_food_respawn_rate(
     """
     餌再生成率の時系列グラフを生成して保存する。
 
+    1日につき1点だけ描画することで、
+    1日の中で同じ値が複数step続くことによる
+    階段状の見た目を避ける。
+
     Args:
         df:
             food_respawn_rate 列を含むシミュレーションログ
@@ -414,54 +418,102 @@ def plot_food_respawn_rate(
             保存先のファイルパス
     """
 
-    if "food_respawn_rate" not in df.columns:
+    required_columns = {
+        "step",
+        "simulation_year",
+        "day_of_year",
+        "food_respawn_rate",
+    }
+
+    missing_columns = (
+        required_columns - set(df.columns)
+    )
+
+    if missing_columns:
         raise ValueError(
-            "food_respawn_rate column is missing from log data."
+            "Missing columns for food respawn plot: "
+            f"{sorted(missing_columns)}"
         )
+
+    # -------------------------
+    # 1日につき1行だけ取得
+    # -------------------------
+    daily_df = (
+        df
+        .drop_duplicates(
+            subset=[
+                "simulation_year",
+                "day_of_year",
+            ],
+            keep="first",
+        )
+        .copy()
+    )
 
     plt.figure(figsize=(10, 6))
 
     plt.plot(
-        df["step"],
-        df["food_respawn_rate"],
+        daily_df["step"],
+        daily_df["food_respawn_rate"],
         linewidth=2,
         label="Food Respawn Rate",
     )
 
-    # 複数年実行の場合、年の境界を縦線で表示
-    if "simulation_year" in df.columns:
-        year_changed = (
-            df["simulation_year"]
-            .ne(df["simulation_year"].shift())
+    # -------------------------
+    # 複数年の場合は年境界を表示
+    # -------------------------
+    year_changed = (
+        daily_df["simulation_year"]
+        .ne(
+            daily_df["simulation_year"].shift()
+        )
+    )
+
+    year_start_steps = (
+        daily_df.loc[
+            year_changed,
+            "step",
+        ]
+        .iloc[1:]
+    )
+
+    for step in year_start_steps:
+        plt.axvline(
+            x=step,
+            linestyle="--",
+            alpha=0.35,
         )
 
-        year_start_steps = (
-            df.loc[year_changed, "step"]
-            .iloc[1:]
-        )
-
-        for step in year_start_steps:
-            plt.axvline(
-                x=step,
-                linestyle="--",
-                alpha=0.35,
-            )
-
-    plt.title("Food Respawn Rate Over Time")
+    plt.title(
+        "Food Respawn Rate Over Time"
+    )
     plt.xlabel("Step")
-    plt.ylabel("Food Respawn Rate")
+    plt.ylabel(
+        "Food Respawn Rate"
+    )
 
     y_max = float(
-        df["food_respawn_rate"].max()
+        daily_df[
+            "food_respawn_rate"
+        ].max()
     )
 
     plt.ylim(
         0.0,
-        max(0.05, y_max * 1.1),
+        max(
+            0.05,
+            y_max * 1.1,
+        ),
     )
 
-    plt.legend(loc="upper right")
-    plt.grid(True, alpha=0.3)
+    plt.legend(
+        loc="upper right"
+    )
+    plt.grid(
+        True,
+        alpha=0.3,
+    )
+
     plt.tight_layout()
 
     plt.savefig(
