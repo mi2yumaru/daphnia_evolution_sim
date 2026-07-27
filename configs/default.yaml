@@ -7,7 +7,7 @@ simulation:
   # duration_modeが"steps"のときに使用
   steps: 1000
   # duration_modeが"years"のときに使用
-  duration_years: 1
+  duration_years: 3
   days_per_year: 365
   steps_per_day: 10
 
@@ -50,7 +50,7 @@ seasonal_food:
   #   environment.food_respawn_rate の固定値を使用
   enabled: true
 
-  csv_path: "data/kasumigaura_sta9_food_respawn_365.csv"
+  csv_path: "data/kasumigaura_sta9_food_respawn_365_v3.csv"
 
 behavior:
   low_energy_threshold_ratio: 0.5
@@ -87,7 +87,7 @@ organism:
 
   # randomize_lifespan=false の場合に使用する固定寿命
   max_age: 200
-  
+
   move_type: "moore"  # moore(8) or von_neumann(4)
 
 genetics:
