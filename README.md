@@ -23,7 +23,7 @@
 このシステムの基本単位は step です。時間単位は設定によって次のように対応付けられます。
 
 - `simulation.steps_per_day`: 1日あたりの step 数
-- `simulation.days_per_year`: 1年の step 日数
+- `simulation.days_per_year`: 1年あたりの日数
 - `simulation.duration_mode`: `steps` または `years`
 
 デフォルト設定では、1日 = 10 step、1年 = 365 日です。`duration_mode: years` の場合、総 step 数は
@@ -32,7 +32,7 @@
 duration_years × days_per_year × steps_per_day
 ```
 
-で計算されます。現在のデフォルトでは `duration_years: 3` のため、3年間の実行は 3,650 step になります。
+で計算されます。現在のデフォルトでは `duration_years: 3` のため、3年間の実行は 10,950 step になります。
 
 実行中は `simulation_year` / `day_of_year` / `month` / `day_of_month` をログに記録し、ライブ可視化でも年・日情報を利用します。現在は閏年を扱わず、各年を固定の 365 日として扱います。
 
@@ -43,7 +43,6 @@ duration_years × days_per_year × steps_per_day
 - `food_respawn_rate` は固定値だけでなく、CSV から 365 日分の季節曲線を読み込むことができます。
 - 365 日分の固定曲線は、複数年シミュレーションでも年ごとに繰り返して利用されます。
 - 1日の値は、その日のすべての step で同じ `food_respawn_rate` として使われます。
-- 現在利用している CSV ファイル名は `data/kasumigaura_sta9_food_respawn_365_v3.csv` です。
 
 この曲線は、霞ヶ浦 Sta.9 の一次生産量の季節性を参照し、長期の月次観測値をもとにシミュレーション用の滑らかな 365 日固定曲線として構成したものです。一次生産量の季節性を、シミュレーション上の餌供給強度へ対応付けたモデル化であり、物理単位の直接変換ではありません。
 
@@ -62,7 +61,7 @@ duration_years × days_per_year × steps_per_day
   - 死亡（エネルギー枯渇または寿命による死亡）
 - ゲノムから戦略へ
   - 20 ビットゲノムを 4 つの 5 ビットセグメントに分割
-  - 各セグメントを 0..31 から 0.0..1.0 に正規化し、以下の phenotype を生成
+  - 各セグメントを 0..31 から 0.0..1.0 に正規化し、以下の表現型（phenotype）を生成
     - `exploration_tendency`
     - `site_fidelity`
     - `risk_tolerance`
@@ -74,6 +73,8 @@ duration_years × days_per_year × steps_per_day
   - 各ステップで `food_respawn_count`, `food_consumed_count`, `food_count`, `food_respawn_rate` を記録
   - 1 step で実際に追加された餌マス数を `food_respawn_count[t]`、実際に削除された餌マス数を `food_consumed_count[t]` として扱う
   - step 終了時点の `food_count[t]` は、前 step の在庫にその step の補給と消費を反映した値です
+
+    初期状態を除く各 step では、他に食料を増減させる処理がない場合、次の食料収支が成り立ちます。
 
     ```text
     food_count[t]
@@ -94,6 +95,19 @@ duration_years × days_per_year × steps_per_day
   - `behavior_trait_std` や各 trait の min/max range は、単一試行内の個体群内部のばらつきを示します
   - 一方、複数 seed の mean±std は seed 間の試行結果のばらつきを示します
   - `food_respawn_rate.png` は環境入力としての補給条件を示し、`food_dynamics.png` はその環境条件下で実際に供給・消費・蓄積された餌を示します
+
+## 今後の拡張
+
+現在までに、個体ベースモデルの基盤構築、random / patch 環境の実装・基礎比較、季節的食料供給の導入までを進めています。
+
+今後は以下を予定しています。
+
+- 季節変動環境下での基礎挙動・行動戦略進化の検証
+- random / patch 環境と季節変動を組み合わせた比較
+- 遺伝子交換機構の導入
+- 固定した遺伝子交換率による比較実験
+- 遺伝子交換率を進化可能な形質として導入
+- 遺伝子交換コストや環境条件に対する感度分析
 
 ## 依存パッケージ
 
@@ -256,6 +270,8 @@ configs/default.yaml で主な挙動を調整できます。
 - age_death_rate と energy_death_rate による死因分析
 - active_lineage_count と largest_lineage_share による系統構造
 - average_generation と max_generation による世代進行
+- `food_respawn_rate` による環境側の餌供給条件
+- `food_respawn_count`, `food_consumed_count`, `food_count` による食料収支・餌動態
 
 ## プロジェクト構造
 
