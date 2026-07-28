@@ -11,6 +11,8 @@ import yaml
 try:
     from src.runner import run_single_simulation
     from src.visualizer import (
+        COMMON_PLOT_SPECS,
+        add_derived_metrics,
         plot_aggregate_mean_std,
         plot_food_dynamics,
         plot_food_respawn_rate,
@@ -18,6 +20,8 @@ try:
 except ImportError:
     from runner import run_single_simulation
     from visualizer import (
+        COMMON_PLOT_SPECS,
+        add_derived_metrics,
         plot_aggregate_mean_std,
         plot_food_dynamics,
         plot_food_respawn_rate,
@@ -52,76 +56,8 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 def add_food_sharing_metrics(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    餌共有に関する派生指標を追加する。
-
-    追加する列:
-        consumed_food_cell_count:
-            そのstepで消費された餌マス数
-
-        shared_food_cell_ratio:
-            消費された餌マスのうち、
-            複数個体によって共有された餌マスの割合
-
-        shared_food_consumer_ratio:
-            摂食した個体のうち、
-            共有餌を利用した個体の割合
-
-        mean_consumers_per_shared_food_plot:
-            共有餌1マスあたりの平均摂食個体数。
-            共有が発生しなかったstepではNaNとし、
-            seed平均を不当に低下させないようにする。
-    """
-    result = df.copy()
-
-    if "food_consumed_count" in result.columns:
-        result["consumed_food_cell_count"] = result["food_consumed_count"]
-    else:
-        # 非共有餌を食べた個体数
-        # 非共有餌では「1個体 = 1餌マス」なので、
-        # そのまま非共有餌マス数として扱える。
-        non_shared_food_cell_count = (
-            result["eat_count"]
-            - result["shared_food_consumer_count"]
-        ).clip(lower=0)
-
-        # そのstepで消費されたユニークな餌マス数
-        result["consumed_food_cell_count"] = (
-            result["shared_food_cell_count"]
-            + non_shared_food_cell_count
-        )
-
-    # 消費餌マスのうち、共有された餌マスの割合
-    food_cell_denominator = result[
-        "consumed_food_cell_count"
-    ].where(
-        result["consumed_food_cell_count"] > 0
-    )
-
-    result["shared_food_cell_ratio"] = (
-        result["shared_food_cell_count"]
-        / food_cell_denominator
-    )
-
-    # 摂食個体のうち、共有餌を利用した個体の割合
-    consumer_denominator = result["eat_count"].where(
-        result["eat_count"] > 0
-    )
-
-    result["shared_food_consumer_ratio"] = (
-        result["shared_food_consumer_count"]
-        / consumer_denominator
-    )
-
-    # 共有が起きていないstepの0を、
-    # seed平均計算時に含めないためのグラフ用列
-    result["mean_consumers_per_shared_food_plot"] = (
-        result["mean_consumers_per_shared_food"].where(
-            result["shared_food_cell_count"] > 0
-        )
-    )
-
-    return result
+    """Backward-compatible wrapper around the shared derived-metrics function."""
+    return add_derived_metrics(df)
 
 def aggregate_runs(all_logs: list[pd.DataFrame]) -> pd.DataFrame:
     """
@@ -362,7 +298,7 @@ def main() -> None:
     )
 
     # -------------------------
-    # 餌再生成率 / 餌ダイナミクス
+    # 共通グラフ / 単一seed専用グラフ
     # -------------------------
     plot_food_respawn_rate(
         all_logs[0],
@@ -374,219 +310,38 @@ def main() -> None:
         experiment_dir / "food_dynamics_mean_std.png",
     )
 
-    plot_aggregate_mean_std(
-        aggregate_df,
-        experiment_dir / "population_mean_std.png",
-        metrics=[
-            ("population_size", "Population")
-        ],
-        title="Population Across Seeds",
-        ylabel="Population Size"
-    )
+    for spec in COMMON_PLOT_SPECS:
+        if spec["name"] == "food_respawn_rate":
+            continue
+        if spec["name"] == "food_dynamics":
+            continue
 
-    plot_aggregate_mean_std(
-        aggregate_df,
-        experiment_dir / "movement_eating_mean_std.png",
-        metrics=[
-            ("move_rate", "Move Rate"),
-            ("total_eat_rate", "Total Eat Rate"),
-        ],
-        title="Movement and Total Eating Rates Across Seeds",
-        ylabel="Rate"
-    )
+        output_path = experiment_dir / spec["aggregate_output_name"]
+        plot_aggregate_mean_std(
+            aggregate_df,
+            output_path,
+            metrics=spec["metrics"],
+            title=f"{spec['title']} Across Seeds",
+            ylabel=spec["ylabel"],
+            fixed_ylim=spec.get("fixed_ylim"),
+        )
 
-    plot_aggregate_mean_std(
-        aggregate_df,
-        experiment_dir / "eating_breakdown_rates_mean_std.png",
-        metrics=[
-            ("eat_after_move_rate", "Eat Success After Move"),
-            ("eat_without_move_rate", "Eat Success Without Move"),
-        ],
-        title="Eating Success Rates by Movement State Across Seeds",
-        ylabel="Rate"
-    )
+    if "largest_lineage_share_mean" in aggregate_df.columns:
+        largest_lineage_upper = (
+            aggregate_df["largest_lineage_share_mean"]
+            + aggregate_df["largest_lineage_share_std"].fillna(0.0)
+        ).max()
+        largest_lineage_ymax = max(largest_lineage_upper * 1.1, 0.1)
+        largest_lineage_ymax = min(largest_lineage_ymax, 1.0)
 
-    plot_aggregate_mean_std(
-        aggregate_df,
-        experiment_dir / "food_sharing_ratios_mean_std.png",
-        metrics=[
-            (
-                "shared_food_cell_ratio",
-                "Shared Food Cell Ratio"
-            ),
-            (
-                "shared_food_consumer_ratio",
-                "Shared Food Consumer Ratio"
-            ),
-        ],
-        title="Food Sharing Ratios Across Seeds",
-        ylabel="Ratio",
-        fixed_ylim=(0.0, 1.0),
-    )
-
-    plot_aggregate_mean_std(
-        aggregate_df,
-        experiment_dir / "consumers_per_shared_food_mean_std.png",
-        metrics=[
-            (
-                "mean_consumers_per_shared_food_plot",
-                "Mean Consumers per Shared Food"
-            ),
-        ],
-        title="Mean Consumers per Shared Food Across Seeds",
-        ylabel="Consumers per Shared Food",
-    )
-
-    plot_aggregate_mean_std(
-        aggregate_df,
-        experiment_dir / "birth_death_mean_std.png",
-        metrics=[
-            ("birth_rate", "Birth Rate"),
-            ("age_death_rate", "Age Death Rate"),
-            ("energy_death_rate", "Energy Death Rate"),
-        ],
-        title="Birth and Death Rates Across Seeds",
-        ylabel="Rate"
-    )
-
-    plot_aggregate_mean_std(
-        aggregate_df,
-        experiment_dir / "behavior_traits_mean_std.png",
-        metrics=[
-            (
-                "average_exploration_tendency",
-                "Exploration Tendency"
-            ),
-            (
-                "average_site_fidelity",
-                "Site Fidelity"
-            ),
-            (
-                "average_risk_tolerance",
-                "Risk Tolerance"
-            ),
-            (
-                "average_reproduction_timing",
-                "Reproduction Timing"
-            ),
-        ],
-        title="Behavior Traits Across Seeds",
-        ylabel="Trait Value",
-        fixed_ylim=(0.0, 1.0)
-    )
-
-    plot_aggregate_mean_std(
-        aggregate_df,
-        experiment_dir / "average_energy_mean_std.png",
-        metrics=[
-            ("average_energy", "Average Energy")
-        ],
-        title="Average Energy Across Seeds",
-        ylabel="Average Energy"
-    )
-
-    plot_aggregate_mean_std(
-        aggregate_df,
-        experiment_dir / "average_age_mean_std.png",
-        metrics=[
-            ("average_age", "Average Age")
-        ],
-        title="Average Age Across Seeds",
-        ylabel="Average Age"
-    )
-
-    plot_aggregate_mean_std(
-        aggregate_df,
-        experiment_dir / "birth_death_counts_mean_std.png",
-        metrics=[
-            ("birth_count", "Birth Count"),
-            ("age_death_count", "Age Death Count"),
-            ("energy_death_count", "Energy Death Count"),
-        ],
-        title="Birth and Death Counts Across Seeds",
-        ylabel="Count"
-    )
-
-    # 生存Founder系統数
-    plot_aggregate_mean_std(
-        aggregate_df,
-        experiment_dir
-        / "active_lineage_count_mean_std.png",
-        metrics=[
-            (
-                "active_lineage_count",
-                "Active Lineage Count",
-            ),
-        ],
-        title="Active Lineages Across Seeds",
-        ylabel="Lineage Count",
-    )
-
-    # 最大系統シェア
-    largest_lineage_upper = (
-        aggregate_df[
-            "largest_lineage_share_mean"
-        ]
-        +
-        aggregate_df[
-            "largest_lineage_share_std"
-        ].fillna(0.0)
-    ).max()
-
-    # 最大値に10%の余白を追加
-    largest_lineage_ymax = (
-        largest_lineage_upper * 1.1
-    )
-
-    # 小さすぎる場合でも最低0.1までは表示
-    largest_lineage_ymax = max(
-        largest_lineage_ymax,
-        0.1,
-    )
-
-    # Shareなので1.0を超えないようにする
-    largest_lineage_ymax = min(
-        largest_lineage_ymax,
-        1.0,
-    )
-
-
-    plot_aggregate_mean_std(
-        aggregate_df,
-        experiment_dir
-        / "largest_lineage_share_mean_std.png",
-        metrics=[
-            (
-                "largest_lineage_share",
-                "Largest Lineage Share",
-            ),
-        ],
-        title="Largest Lineage Share Across Seeds",
-        ylabel="Share",
-        fixed_ylim=(
-            0.0,
-            largest_lineage_ymax,
-        ),
-    )
-
-    # 世代進行
-    plot_aggregate_mean_std(
-        aggregate_df,
-        experiment_dir
-        / "generation_mean_std.png",
-        metrics=[
-            (
-                "average_generation",
-                "Average Generation",
-            ),
-            (
-                "max_generation",
-                "Max Generation",
-            ),
-        ],
-        title="Generation Progress Across Seeds",
-        ylabel="Generation",
-    )
+        plot_aggregate_mean_std(
+            aggregate_df,
+            experiment_dir / "largest_lineage_share_mean_std.png",
+            metrics=[("largest_lineage_share", "Largest Lineage Share")],
+            title="Largest Lineage Share Across Seeds",
+            ylabel="Share",
+            fixed_ylim=(0.0, largest_lineage_ymax),
+        )
 
     print("\n=== 複数seed実験完了 ===")
     print(f"実行seed: {args.seeds}")

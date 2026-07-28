@@ -8,6 +8,175 @@ from pathlib import Path
 import pandas as pd
 import matplotlib.pyplot as plt
 
+COMMON_PLOT_SPECS = [
+    {
+        "name": "population",
+        "metrics": [("population_size", "Population")],
+        "title": "Population Over Time",
+        "ylabel": "Population Size",
+        "output_name": "population.png",
+        "aggregate_output_name": "population_mean_std.png",
+    },
+    {
+        "name": "average_energy",
+        "metrics": [("average_energy", "Average Energy")],
+        "title": "Average Energy Over Time",
+        "ylabel": "Average Energy",
+        "output_name": "average_energy.png",
+        "aggregate_output_name": "average_energy_mean_std.png",
+    },
+    {
+        "name": "average_age",
+        "metrics": [("average_age", "Average Age")],
+        "title": "Average Age Over Time",
+        "ylabel": "Average Age",
+        "output_name": "average_age.png",
+        "aggregate_output_name": "average_age_mean_std.png",
+    },
+    {
+        "name": "movement_eating",
+        "metrics": [("move_rate", "Move Rate"), ("total_eat_rate", "Total Eat Rate")],
+        "title": "Movement and Total Eating Rates Over Time",
+        "ylabel": "Rate",
+        "output_name": "movement_and_eating_rates.png",
+        "aggregate_output_name": "movement_eating_mean_std.png",
+    },
+    {
+        "name": "eating_breakdown",
+        "metrics": [("eat_after_move_rate", "Eat Success After Move"), ("eat_without_move_rate", "Eat Success Without Move")],
+        "title": "Eating Success Rates by Movement State",
+        "ylabel": "Rate",
+        "output_name": "eating_breakdown_rates.png",
+        "aggregate_output_name": "eating_breakdown_rates_mean_std.png",
+    },
+    {
+        "name": "behavior_traits",
+        "metrics": [
+            ("average_exploration_tendency", "Exploration Tendency"),
+            ("average_site_fidelity", "Site Fidelity"),
+            ("average_risk_tolerance", "Risk Tolerance"),
+            ("average_reproduction_timing", "Reproduction Timing"),
+        ],
+        "title": "Average Behavior Traits Over Time",
+        "ylabel": "Trait Value",
+        "output_name": "behavior_traits.png",
+        "aggregate_output_name": "behavior_traits_mean_std.png",
+        "fixed_ylim": (0.0, 1.0),
+    },
+    {
+        "name": "birth_death_components",
+        "metrics": [("birth_rate", "Birth Rate"), ("age_death_rate", "Age Death Rate"), ("energy_death_rate", "Energy Death Rate")],
+        "title": "Birth and Death Rates Over Time",
+        "ylabel": "Rate",
+        "output_name": "birth_death_rates.png",
+        "aggregate_output_name": "birth_death_mean_std.png",
+    },
+    {
+        "name": "birth_death_counts",
+        "metrics": [("birth_count", "Birth Count"), ("age_death_count", "Age Death Count"), ("energy_death_count", "Energy Death Count")],
+        "title": "Birth and Death Counts Over Time",
+        "ylabel": "Count",
+        "output_name": "birth_count.png",
+        "aggregate_output_name": "birth_death_counts_mean_std.png",
+    },
+    {
+        "name": "food_sharing_ratios",
+        "metrics": [("shared_food_cell_ratio", "Shared Food Cell Ratio"), ("shared_food_consumer_ratio", "Shared Food Consumer Ratio")],
+        "title": "Food Sharing Ratios Over Time",
+        "ylabel": "Ratio",
+        "output_name": "food_sharing_ratios.png",
+        "aggregate_output_name": "food_sharing_ratios_mean_std.png",
+        "fixed_ylim": (0.0, 1.0),
+    },
+    {
+        "name": "consumers_per_shared_food",
+        "metrics": [("mean_consumers_per_shared_food_plot", "Mean Consumers per Shared Food")],
+        "title": "Mean Consumers per Shared Food Over Time",
+        "ylabel": "Consumers per Shared Food",
+        "output_name": "consumers_per_shared_food.png",
+        "aggregate_output_name": "consumers_per_shared_food_mean_std.png",
+    },
+    {
+        "name": "active_lineage_count",
+        "metrics": [("active_lineage_count", "Active Lineage Count")],
+        "title": "Active Lineages Over Time",
+        "ylabel": "Lineage Count",
+        "output_name": "active_lineage_count.png",
+        "aggregate_output_name": "active_lineage_count_mean_std.png",
+    },
+    {
+        "name": "largest_lineage_share",
+        "metrics": [("largest_lineage_share", "Largest Lineage Share")],
+        "title": "Largest Lineage Share Over Time",
+        "ylabel": "Share",
+        "output_name": "largest_lineage_share.png",
+        "aggregate_output_name": "largest_lineage_share_mean_std.png",
+    },
+    {
+        "name": "generation_progress",
+        "metrics": [("average_generation", "Average Generation"), ("max_generation", "Max Generation")],
+        "title": "Generation Progress Over Time",
+        "ylabel": "Generation",
+        "output_name": "generation.png",
+        "aggregate_output_name": "generation_mean_std.png",
+    },
+    {
+        "name": "food_respawn_rate",
+        "metrics": [("food_respawn_rate", "Food Respawn Rate")],
+        "title": "Food Respawn Rate Over Time",
+        "ylabel": "Food Respawn Rate",
+        "output_name": "food_respawn_rate.png",
+        "aggregate_output_name": "food_respawn_rate_mean_std.png",
+    },
+    {
+        "name": "food_dynamics",
+        "metrics": [("food_respawn_count", "Food Respawned"), ("food_consumed_count", "Food Consumed"), ("food_count", "Food Count")],
+        "title": "Food Dynamics Over Time",
+        "ylabel": "Food Cells",
+        "output_name": "food_dynamics.png",
+        "aggregate_output_name": "food_dynamics_mean_std.png",
+    },
+]
+
+
+def add_derived_metrics(df: pd.DataFrame) -> pd.DataFrame:
+    """Add shared derived columns used by single- and multi-seed plots."""
+    result = df.copy()
+
+    if "food_consumed_count" in result.columns:
+        result["consumed_food_cell_count"] = result["food_consumed_count"]
+    elif "eat_count" in result.columns:
+        non_shared_food_cell_count = (
+            result["eat_count"] - result.get("shared_food_consumer_count", 0)
+        ).clip(lower=0)
+        result["consumed_food_cell_count"] = (
+            result.get("shared_food_cell_count", 0) + non_shared_food_cell_count
+        )
+    else:
+        result["consumed_food_cell_count"] = 0
+
+    if "consumed_food_cell_count" in result.columns:
+        food_cell_denominator = result["consumed_food_cell_count"].where(
+            result["consumed_food_cell_count"] > 0
+        )
+        result["shared_food_cell_ratio"] = result.get("shared_food_cell_count", 0) / food_cell_denominator
+
+        consumer_denominator = result.get("eat_count", 0).where(result.get("eat_count", 0) > 0)
+        result["shared_food_consumer_ratio"] = result.get("shared_food_consumer_count", 0) / consumer_denominator
+    else:
+        result["shared_food_cell_ratio"] = 0.0
+        result["shared_food_consumer_ratio"] = 0.0
+
+    if "mean_consumers_per_shared_food" in result.columns:
+        result["mean_consumers_per_shared_food_plot"] = result["mean_consumers_per_shared_food"].where(
+            result.get("shared_food_cell_count", 0) > 0
+        )
+    else:
+        result["mean_consumers_per_shared_food_plot"] = pd.NA
+
+    return result
+
+
 def get_dynamic_ylim_upper(values_list, margin_ratio: float = 0.1, min_upper: float = 0.05) -> float:
     """
     複数の系列データから、見やすいy軸上限を自動計算する。
@@ -33,61 +202,67 @@ def get_dynamic_ylim_upper(values_list, margin_ratio: float = 0.1, min_upper: fl
     upper = max_value * (1.0 + margin_ratio)
     return max(upper, min_upper)
 
-def plot_population(df: pd.DataFrame, output_path: str) -> None:
-    """
-    個体数の時系列グラフを生成して保存
-    
-    Args:
-        df: ログデータを持つDataFrame
-        output_path: 保存先のファイルパス
-    """
+def plot_single_metrics(
+    df: pd.DataFrame,
+    output_path: str | Path,
+    metrics: list[tuple[str, str]],
+    title: str,
+    ylabel: str,
+    fixed_ylim: tuple[float, float] | None = None,
+) -> None:
+    """Plot step-wise values for a single seed without mean/std bands."""
     plt.figure(figsize=(10, 6))
-    plt.plot(df["step"], df["population_size"], linewidth=2, color="blue")
-    plt.title("Population Over Time")
+
+    for metric, label in metrics:
+        if metric not in df.columns:
+            continue
+        plt.plot(df["step"], df[metric], linewidth=2, label=label)
+
+    plt.title(title)
     plt.xlabel("Step")
-    plt.ylabel("Population Size")
+    plt.ylabel(ylabel)
+
+    if fixed_ylim is not None:
+        plt.ylim(*fixed_ylim)
+
+    plt.legend(loc="upper right")
     plt.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
+
+
+def plot_population(df: pd.DataFrame, output_path: str) -> None:
+    """Compatibility wrapper for the population plot."""
+    plot_single_metrics(
+        df,
+        output_path,
+        [("population_size", "Population")],
+        "Population Over Time",
+        "Population Size",
+    )
 
 
 def plot_average_energy(df: pd.DataFrame, output_path: str) -> None:
-    """
-    平均エネルギーの時系列グラフを生成して保存
-    
-    Args:
-        df: ログデータを持つDataFrame
-        output_path: 保存先のファイルパス
-    """
-    plt.figure(figsize=(10, 6))
-    plt.plot(df["step"], df["average_energy"], linewidth=2, color="green")
-    plt.title("Average Energy Over Time")
-    plt.xlabel("Step")
-    plt.ylabel("Average Energy")
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=150)
-    plt.close()
+    """Compatibility wrapper for the average energy plot."""
+    plot_single_metrics(
+        df,
+        output_path,
+        [("average_energy", "Average Energy")],
+        "Average Energy Over Time",
+        "Average Energy",
+    )
 
 
 def plot_average_age(df: pd.DataFrame, output_path: str) -> None:
-    """
-    平均年齢の時系列グラフを生成して保存
-    
-    Args:
-        df: ログデータを持つDataFrame
-        output_path: 保存先のファイルパス
-    """
-    plt.figure(figsize=(10, 6))
-    plt.plot(df["step"], df["average_age"], linewidth=2, color="orange")
-    plt.title("Average Age Over Time")
-    plt.xlabel("Step")
-    plt.ylabel("Average Age")
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=150)
-    plt.close()
+    """Compatibility wrapper for the average age plot."""
+    plot_single_metrics(
+        df,
+        output_path,
+        [("average_age", "Average Age")],
+        "Average Age Over Time",
+        "Average Age",
+    )
 
 
 def plot_birth_count(df: pd.DataFrame, output_path: str) -> None:
@@ -129,51 +304,20 @@ def plot_death_count(df: pd.DataFrame, output_path: str) -> None:
 
 
 def plot_behavior_traits(df: pd.DataFrame, output_path: str) -> None:
-    """
-    行動戦略 phenotype の平均値推移を1枚にまとめて保存
-    
-    Args:
-        df: ログデータを持つDataFrame
-        output_path: 保存先のファイルパス
-    """
-    plt.figure(figsize=(10, 6))
-    plt.plot(
-        df["step"],
-        df["average_exploration_tendency"],
-        label="Exploration Tendency",
-        linewidth=2
+    """Compatibility wrapper for the behavior-traits average plot."""
+    plot_single_metrics(
+        df,
+        output_path,
+        [
+            ("average_exploration_tendency", "Exploration Tendency"),
+            ("average_site_fidelity", "Site Fidelity"),
+            ("average_risk_tolerance", "Risk Tolerance"),
+            ("average_reproduction_timing", "Reproduction Timing"),
+        ],
+        "Average Behavior Traits Over Time",
+        "Trait Value",
+        fixed_ylim=(0.0, 1.0),
     )
-
-    plt.plot(
-        df["step"],
-        df["average_site_fidelity"],
-        label="Site Fidelity",
-        linewidth=2
-    )
-
-    plt.plot(
-        df["step"],
-        df["average_risk_tolerance"],
-        label="Risk Tolerance",
-        linewidth=2
-    )
-
-    plt.plot(
-        df["step"],
-        df["average_reproduction_timing"],
-        label="Reproduction Timing",
-        linewidth=2
-    )
-
-    plt.title("Average Behavior Traits Over Time")
-    plt.xlabel("Step")
-    plt.ylabel("Trait Value")
-    plt.ylim(0, 1.0)
-    plt.legend(loc="upper right")
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=150)
-    plt.close()
 
 def plot_trait_range(
     df: pd.DataFrame,
@@ -273,132 +417,25 @@ def plot_behavior_trait_std(df: pd.DataFrame, output_path: str) -> None:
     plt.close()
 
 def plot_movement_and_eating_rates(df: pd.DataFrame, output_path: str) -> None:
-    """
-    移動率と摂食率の推移を1枚にまとめて保存する。
-
-    Args:
-        df: ログデータを持つDataFrame
-        output_path: 保存先のファイルパス
-    """
-
+    """Compatibility wrapper for the movement/eating plot."""
     total_eat_col = "total_eat_rate" if "total_eat_rate" in df.columns else "eat_rate"
-
-    plt.figure(figsize=(10, 6))
-
-    plt.plot(
-        df["step"],
-        df["move_rate"],
-        linewidth=2,
-        label="Move Rate"
-    )
-
-    plt.plot(
-        df["step"],
-        df[total_eat_col],
-        linewidth=2,
-        label="Total Eat Rate"
-    )
-
-    plt.title("Movement and Eating Rates Over Time")
-    plt.xlabel("Step")
-    plt.ylabel("Rate")
-
-    y_upper = get_dynamic_ylim_upper(
-        [df["move_rate"], df[total_eat_col]],
-        margin_ratio=0.1,
-        min_upper=0.05
-    )
-    plt.ylim(0, y_upper)
-
-    plt.legend(loc="upper right")
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=150)
-    plt.close()
+    metrics = [("move_rate", "Move Rate"), (total_eat_col, "Total Eat Rate")]
+    plot_single_metrics(df, output_path, metrics, "Movement and Eating Rates Over Time", "Rate")
 
 def plot_eating_breakdown_rates(df: pd.DataFrame, output_path: str) -> None:
-    """
-    摂食率を「移動後摂食率」「非移動摂食率」「総摂食率」に分けて描画する。
-
-    Args:
-        df: ログデータを持つDataFrame
-        output_path: 保存先のファイルパス
-    """
-    plt.figure(figsize=(10, 6))
-
-    plt.plot(
-        df["step"],
-        df["eat_after_move_rate"],
-        linewidth=2,
-        label="Eat Success After Move"
+    """Compatibility wrapper for the eating-breakdown plot."""
+    plot_single_metrics(
+        df,
+        output_path,
+        [("eat_after_move_rate", "Eat Success After Move"), ("eat_without_move_rate", "Eat Success Without Move")],
+        "Eating Success Rates by Movement State",
+        "Rate",
     )
-    plt.plot(
-        df["step"],
-        df["eat_without_move_rate"],
-        linewidth=2,
-        label="Eat Success Without Move"
-    )
-
-    plt.title("Eating Success Rates by Movement State")
-    plt.xlabel("Step")
-    plt.ylabel("Rate")
-
-    y_upper = get_dynamic_ylim_upper(
-        [
-            df["eat_after_move_rate"],
-            df["eat_without_move_rate"],
-        ],
-        margin_ratio=0.1,
-        min_upper=0.05
-    )
-
-    plt.ylim(0, y_upper)
-    plt.legend(loc="upper right")
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=150)
-    plt.close()
 
 def plot_birth_death_rates(df: pd.DataFrame, output_path: str) -> None:
-    """
-    出生率と死亡率の推移を1枚にまとめて保存する。
-
-    Args:
-        df: ログデータを持つDataFrame
-        output_path: 保存先のファイルパス
-    """
-    plt.figure(figsize=(10, 6))
-
-    plt.plot(
-        df["step"],
-        df["birth_rate"],
-        linewidth=2,
-        label="Birth Rate"
-    )
-
-    plt.plot(
-        df["step"],
-        df["death_rate"],
-        linewidth=2,
-        label="Death Rate"
-    )
-
-    plt.title("Birth and Death Rates Over Time")
-    plt.xlabel("Step")
-    plt.ylabel("Rate")
-
-    y_upper = get_dynamic_ylim_upper(
-        [df["birth_rate"], df["death_rate"]],
-        margin_ratio=0.1,
-        min_upper=0.05
-    )
-    plt.ylim(0, y_upper)
-
-    plt.legend(loc="upper right")
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=150)
-    plt.close()
+    """Compatibility wrapper for the birth/death components plot."""
+    metrics = [("birth_rate", "Birth Rate"), ("age_death_rate", "Age Death Rate"), ("energy_death_rate", "Energy Death Rate")]
+    plot_single_metrics(df, output_path, metrics, "Birth and Death Rates Over Time", "Rate")
 
 def plot_food_dynamics(
     df: pd.DataFrame,
@@ -630,50 +667,31 @@ def save_all_single_run_plots(
     df: pd.DataFrame,
     output_dir: str | Path
 ) -> None:
-    """
-    単一seed実行用のグラフをまとめて保存する。
-
-    Args:
-        df: 1回分のシミュレーションログ
-        output_dir: 出力先ディレクトリ
-    """
+    """Save common plots plus single-only plots for a single simulation run."""
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    plot_population(
-        df,
-        str(output_dir / "population.png")
-    )
+    df = add_derived_metrics(df)
 
-    plot_average_energy(
-        df,
-        str(output_dir / "average_energy.png")
-    )
+    for spec in COMMON_PLOT_SPECS:
+        output_path = output_dir / spec["output_name"]
+        if spec["name"] == "food_respawn_rate":
+            plot_food_respawn_rate(df, output_path)
+        elif spec["name"] == "food_dynamics":
+            plot_food_dynamics(df, output_path)
+        else:
+            plot_single_metrics(
+                df,
+                output_path,
+                spec["metrics"],
+                spec["title"],
+                spec["ylabel"],
+                fixed_ylim=spec.get("fixed_ylim"),
+            )
 
-    plot_average_age(
-        df,
-        str(output_dir / "average_age.png")
-    )
-
-    plot_birth_count(
-        df,
-        str(output_dir / "birth_count.png")
-    )
-
-    plot_death_count(
-        df,
-        str(output_dir / "death_count.png")
-    )
-
-    plot_behavior_traits(
-        df,
-        str(output_dir / "behavior_traits.png")
-    )
-
-    plot_behavior_trait_std(
-        df,
-        str(output_dir / "behavior_trait_std.png")
-    )
+    plot_birth_count(df, str(output_dir / "birth_count.png"))
+    plot_death_count(df, str(output_dir / "death_count.png"))
+    plot_behavior_trait_std(df, str(output_dir / "behavior_trait_std.png"))
 
     plot_trait_range(
         df,
@@ -709,31 +727,6 @@ def save_all_single_run_plots(
         min_col="min_reproduction_timing",
         max_col="max_reproduction_timing",
         title="Reproduction Timing Range Over Time"
-    )
-
-    plot_movement_and_eating_rates(
-        df,
-        str(output_dir / "movement_and_eating_rates.png")
-    )
-
-    plot_eating_breakdown_rates(
-        df,
-        str(output_dir / "eating_breakdown_rates.png")
-    )
-
-    plot_birth_death_rates(
-        df,
-        str(output_dir / "birth_death_rates.png")
-    )
-
-    plot_food_dynamics(
-        df,
-        output_dir / "food_dynamics.png",
-    )
-
-    plot_food_respawn_rate(
-        df,
-        output_dir / "food_respawn_rate.png",
     )
 
 def plot_aggregate_mean_std(
