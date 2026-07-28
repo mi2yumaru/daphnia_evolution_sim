@@ -400,6 +400,109 @@ def plot_birth_death_rates(df: pd.DataFrame, output_path: str) -> None:
     plt.savefig(output_path, dpi=150)
     plt.close()
 
+def plot_food_dynamics(
+    df: pd.DataFrame,
+    output_path: str | Path,
+) -> None:
+    """
+    ステップ単位で餌の増減を1枚にまとめて保存する。
+
+    単一seedログまたは複数seed集計データのどちらでも描画できるようにする。
+    """
+    plt.figure(figsize=(10, 6))
+
+    def _plot_series(mean_values: pd.Series, std_values: pd.Series | None, label: str, color: str) -> None:
+        line, = plt.plot(
+            df["step"],
+            mean_values,
+            linewidth=2,
+            label=label,
+            color=color,
+        )
+        if std_values is not None:
+            lower = (mean_values - std_values).clip(lower=0.0)
+            upper = mean_values + std_values
+            plt.fill_between(
+                df["step"],
+                lower,
+                upper,
+                alpha=0.2,
+                color=line.get_color(),
+            )
+
+    if all(col in df.columns for col in ["food_respawn_count_mean", "food_respawn_count_std"]):
+        _plot_series(
+            df["food_respawn_count_mean"],
+            df["food_respawn_count_std"].fillna(0.0),
+            "Food Respawned",
+            "green",
+        )
+        _plot_series(
+            df["food_consumed_count_mean"],
+            df["food_consumed_count_std"].fillna(0.0),
+            "Food Consumed",
+            "red",
+        )
+        _plot_series(
+            df["food_count_mean"],
+            df["food_count_std"].fillna(0.0),
+            "Food Count",
+            "blue",
+        )
+    else:
+        required_columns = {
+            "step",
+            "food_respawn_count",
+            "food_consumed_count",
+            "food_count",
+        }
+
+        missing_columns = required_columns - set(df.columns)
+
+        if missing_columns:
+            raise ValueError(
+                "Missing columns for food dynamics plot: "
+                f"{sorted(missing_columns)}"
+            )
+
+        _plot_series(df["food_respawn_count"], None, "Food Respawned", "green")
+        _plot_series(df["food_consumed_count"], None, "Food Consumed", "red")
+        _plot_series(df["food_count"], None, "Food Count", "blue")
+
+    plt.title("Food Dynamics Over Time")
+    plt.xlabel("Step")
+    plt.ylabel("Food Cells")
+
+    if all(col in df.columns for col in ["food_respawn_count_mean", "food_consumed_count_mean", "food_count_mean"]):
+        y_upper = get_dynamic_ylim_upper(
+            [
+                df["food_respawn_count_mean"],
+                df["food_consumed_count_mean"],
+                df["food_count_mean"],
+            ],
+            margin_ratio=0.1,
+            min_upper=0.05,
+        )
+    else:
+        y_upper = get_dynamic_ylim_upper(
+            [
+                df["food_respawn_count"],
+                df["food_consumed_count"],
+                df["food_count"],
+            ],
+            margin_ratio=0.1,
+            min_upper=0.05,
+        )
+
+    plt.ylim(0, y_upper)
+
+    plt.legend(loc="upper right")
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=150)
+    plt.close()
+
+
 def plot_food_respawn_rate(
     df: pd.DataFrame,
     output_path: str | Path,
@@ -621,6 +724,11 @@ def save_all_single_run_plots(
     plot_birth_death_rates(
         df,
         str(output_dir / "birth_death_rates.png")
+    )
+
+    plot_food_dynamics(
+        df,
+        output_dir / "food_dynamics.png",
     )
 
     plot_food_respawn_rate(

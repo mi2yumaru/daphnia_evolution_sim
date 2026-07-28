@@ -12,12 +12,14 @@ try:
     from src.runner import run_single_simulation
     from src.visualizer import (
         plot_aggregate_mean_std,
+        plot_food_dynamics,
         plot_food_respawn_rate,
     )
 except ImportError:
     from runner import run_single_simulation
     from visualizer import (
         plot_aggregate_mean_std,
+        plot_food_dynamics,
         plot_food_respawn_rate,
     )
 
@@ -72,19 +74,22 @@ def add_food_sharing_metrics(df: pd.DataFrame) -> pd.DataFrame:
     """
     result = df.copy()
 
-    # 非共有餌を食べた個体数
-    # 非共有餌では「1個体 = 1餌マス」なので、
-    # そのまま非共有餌マス数として扱える。
-    non_shared_food_cell_count = (
-        result["eat_count"]
-        - result["shared_food_consumer_count"]
-    ).clip(lower=0)
+    if "food_consumed_count" in result.columns:
+        result["consumed_food_cell_count"] = result["food_consumed_count"]
+    else:
+        # 非共有餌を食べた個体数
+        # 非共有餌では「1個体 = 1餌マス」なので、
+        # そのまま非共有餌マス数として扱える。
+        non_shared_food_cell_count = (
+            result["eat_count"]
+            - result["shared_food_consumer_count"]
+        ).clip(lower=0)
 
-    # そのstepで消費されたユニークな餌マス数
-    result["consumed_food_cell_count"] = (
-        result["shared_food_cell_count"]
-        + non_shared_food_cell_count
-    )
+        # そのstepで消費されたユニークな餌マス数
+        result["consumed_food_cell_count"] = (
+            result["shared_food_cell_count"]
+            + non_shared_food_cell_count
+        )
 
     # 消費餌マスのうち、共有された餌マスの割合
     food_cell_denominator = result[
@@ -357,11 +362,16 @@ def main() -> None:
     )
 
     # -------------------------
-    # 餌再生成率
+    # 餌再生成率 / 餌ダイナミクス
     # -------------------------
     plot_food_respawn_rate(
         all_logs[0],
         experiment_dir / "food_respawn_rate.png",
+    )
+
+    plot_food_dynamics(
+        aggregate_df,
+        experiment_dir / "food_dynamics_mean_std.png",
     )
 
     plot_aggregate_mean_std(

@@ -29,6 +29,8 @@ class SimulationLogger:
         food_respawn_rate: float,
         population_size: int,
         food_count: int,
+        food_respawn_count: int,
+        food_consumed_count: int,
         average_energy: float,
         average_age: float,
         birth_count: int,
@@ -86,6 +88,8 @@ class SimulationLogger:
             food_respawn_rate: 現在の餌再生成率
             population_size: 現在の個体数
             food_count: 現在の食料数
+            food_respawn_count: このステップで実際に増えた餌マス数
+            food_consumed_count: このステップで実際に消費され削除された餌マス数
             average_energy: 個体群の平均エネルギー
             average_age: 個体群の平均年齢
             birth_count: このステップで生まれた個体数
@@ -136,6 +140,8 @@ class SimulationLogger:
             "food_respawn_rate": food_respawn_rate,
             "population_size": population_size,
             "food_count": food_count,
+            "food_respawn_count": food_respawn_count,
+            "food_consumed_count": food_consumed_count,
             "average_energy": average_energy,
             "average_age": average_age,
             "birth_count": birth_count,

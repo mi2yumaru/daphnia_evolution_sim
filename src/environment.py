@@ -173,13 +173,15 @@ class Environment:
     def remove_food(self, x: int, y: int) -> None:
         self.food.discard((x, y))
 
-    def respawn_food(self, rate: float) -> None:
+    def respawn_food(self, rate: float) -> int:
+        before_count = len(self.food)
+
         if rate <= 0.0:
-            return
+            return 0
         total = self.width * self.height
         to_add = int(total * rate)
         if to_add <= 0:
-            return
+            return 0
 
         if self.respawn_mode == "patch":
             self._init_patch_regions()
@@ -215,10 +217,11 @@ class Environment:
 
             if added < to_add:
                 self._add_random_food(to_add - added)
-            return
+            return len(self.food) - before_count
 
         # random mode
         self._add_random_food(to_add)
+        return len(self.food) - before_count
 
     def food_count(self) -> int:
         return len(self.food)

@@ -572,12 +572,15 @@ class Simulation:
         self.current_day_of_month = day_of_month
         self.current_food_respawn_rate = current_food_respawn_rate
 
+        food_respawn_count = 0
+        food_consumed_count = 0
+
         # 第2ステップ以降は、個体が行動する前に餌を再生成する
         # current_step は0始まりなので、
         # current_step == 0 が第1ステップ、
         # current_step == 1 が第2ステップに対応する
         if self.current_step > 0:
-            self.environment.respawn_food(
+            food_respawn_count = self.environment.respawn_food(
                 current_food_respawn_rate
             )
 
@@ -681,6 +684,7 @@ class Simulation:
 
             # そのマスの餌は、このstepで消費されたので削除
             self.environment.remove_food(food_x, food_y)
+            food_consumed_count += 1
 
 
         # -------------------------
@@ -922,6 +926,8 @@ class Simulation:
             food_respawn_rate=current_food_respawn_rate,
             population_size=population_size,
             food_count=food_count,
+            food_respawn_count=food_respawn_count,
+            food_consumed_count=food_consumed_count,
             average_energy=average_energy,
             average_age=average_age,
             birth_count=birth_count,
