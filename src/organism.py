@@ -20,6 +20,14 @@ class Organism:
         age: 個体の年齢（ステップ数）
         genome: 0/1 のゲノム配列
     """
+    TRAIT_BITS = 6
+
+    TRAIT_LABELS = [
+        "exploration_tendency",
+        "site_fidelity",
+        "risk_tolerance",
+        "reproduction_timing",
+    ]
     
     def __init__(
         self,
@@ -88,10 +96,24 @@ class Organism:
         self.generation: int = generation
         self.birth_step: int = birth_step
 
+        expected_genome_length = len(self.TRAIT_LABELS) * self.TRAIT_BITS
+
+        if genome_length != expected_genome_length:
+            raise ValueError(
+                f"genome_length must be {expected_genome_length} "
+                f"({len(self.TRAIT_LABELS)} traits × {self.TRAIT_BITS} bits), "
+                f"got {genome_length}"
+            )
+
         if genome is None:
             # ランダムな0/1配列で初期化
             self.genome: np.ndarray = np.random.randint(0, 2, size=genome_length)
         else:
+            if len(genome) != genome_length:
+                raise ValueError(
+                    f"Genome length mismatch: "
+                    f"expected {genome_length}, got {len(genome)}"
+                )
             self.genome: np.ndarray = genome.copy()
 
         self.phenotype: Dict[str, float] = self.calculate_phenotype()
@@ -101,20 +123,20 @@ class Organism:
     def calculate_phenotype(self) -> Dict[str, float]:
         """ゲノムから phenotype を計算する"""
         phenotypes = {}
-        labels = [
-            "exploration_tendency",
-            "site_fidelity",
-            "risk_tolerance",
-            "reproduction_timing"
-        ]
 
-        for idx, label in enumerate(labels):
-            start = idx * 5
-            segment = self.genome[start:start + 5].astype(int)
+        max_value = (1 << self.TRAIT_BITS) - 1
+
+        for idx, label in enumerate(self.TRAIT_LABELS):
+            start = idx * self.TRAIT_BITS
+            segment = self.genome[
+                start:start + self.TRAIT_BITS
+            ].astype(int)
+
             value = 0
             for bit in segment:
                 value = (value << 1) | int(bit)
-            phenotypes[label] = value / 31.0
+
+            phenotypes[label] = value / max_value
 
         return phenotypes
 

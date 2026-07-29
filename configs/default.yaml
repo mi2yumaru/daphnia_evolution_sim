@@ -91,7 +91,8 @@ organism:
   move_type: "moore"  # moore(8) or von_neumann(4)
 
 genetics:
-  genome_length: 20
+  # 現在は 4形質 × 6bit = 24bit
+  genome_length: 24
   mutation_rate: 0.01
   recombination_rate: 0.0
 
