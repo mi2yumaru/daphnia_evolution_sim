@@ -60,8 +60,8 @@ duration_years × days_per_year × steps_per_day
   - 無性生殖（エネルギー閾値を超えると子を生成）
   - 死亡（エネルギー枯渇または寿命による死亡）
 - ゲノムから戦略へ
-  - 20 ビットゲノムを 4 つの 5 ビットセグメントに分割
-  - 各セグメントを 0..31 から 0.0..1.0 に正規化し、以下の表現型（phenotype）を生成
+  - 20 ビットゲノムを 4 つの 6 ビットセグメントに分割
+  - 各セグメントを 0..63 から 0.0..1.0 に正規化し、以下の表現型（phenotype）を生成
     - `exploration_tendency`
     - `site_fidelity`
     - `risk_tolerance`
