@@ -55,10 +55,6 @@ def parse_args() -> argparse.Namespace:
 
     return parser.parse_args()
 
-def add_food_sharing_metrics(df: pd.DataFrame) -> pd.DataFrame:
-    """Backward-compatible wrapper around the shared derived-metrics function."""
-    return add_derived_metrics(df)
-
 def aggregate_runs(all_logs: list[pd.DataFrame]) -> pd.DataFrame:
     """
     各seedのログをstep単位で集約し、平均とseed間標準偏差を求める。
@@ -213,8 +209,8 @@ def main() -> None:
             save_plots=args.save_run_plots,
         )
 
-        # 餌共有に関する派生指標を追加
-        df = add_food_sharing_metrics(df)
+        # グラフ・集計用の派生指標を追加
+        df = add_derived_metrics(df)
         
         df["seed"] = seed
         all_logs.append(df)
