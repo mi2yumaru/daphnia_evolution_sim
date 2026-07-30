@@ -341,12 +341,17 @@ class Organism:
         child_organism_id: int,
         birth_step: int,
         offspring_lifespan: Optional[int] = None,
+        donor_genome: Optional[np.ndarray] = None,
+        exchange_loci: Optional[np.ndarray] = None,
     ) -> "Organism":
         """
         子個体を生成
-        
+
         親のエネルギーは reproduction_cost だけ減少し、
-        子のゲノムは親をコピーしてから mutation_rate に応じてビット反転される
+        親個体のゲノムを基礎として、
+        遺伝子交換が指定されている場合は、
+        exchange_loci の位置を donor_genome の値で置換する。
+        その後、mutation_rate に応じて各bitへ突然変異を適用する。
         
         Args:
             width: グリッドの幅
@@ -358,15 +363,79 @@ class Organism:
             offspring_lifespan: 子個体の寿命。Noneの場合は死亡判定時のmax_ageを使用
             child_organism_id: 子個体のID
             birth_step: 生誕ステップ
+            donor_genome: 遺伝子交換donorのゲノム。交換しない場合はNone
+            exchange_loci: donor由来に置換するゲノム位置。交換しない場合はNoneまたは空配列
 
         Returns:
             Organism: 生成された子個体
         """
+        # -------------------------
+        # 遺伝子交換入力の検証
+        # -------------------------
+
+        if len(self.genome) != genome_length:
+            raise ValueError(
+                f"Parent genome length mismatch: "
+                f"expected {genome_length}, got {len(self.genome)}"
+            )
+
+        if donor_genome is not None:
+            if len(donor_genome) != genome_length:
+                raise ValueError(
+                    f"Donor genome length mismatch: "
+                    f"expected {genome_length}, got {len(donor_genome)}"
+                )
+
+        if exchange_loci is None:
+            exchange_loci_array = np.array([], dtype=int)
+        else:
+            exchange_loci_array = np.asarray(
+                exchange_loci,
+                dtype=int,
+            )
+
+        # exchange_loci が指定されているのに
+        # donor genome が無い場合は不正
+        if len(exchange_loci_array) > 0 and donor_genome is None:
+            raise ValueError(
+                "donor_genome must be provided "
+                "when exchange_loci is not empty"
+            )
+
+        # locus番号がゲノム範囲内か確認
+        if len(exchange_loci_array) > 0:
+            if np.any(exchange_loci_array < 0) or np.any(
+                exchange_loci_array >= genome_length
+            ):
+                raise ValueError(
+                    "exchange_loci contains an out-of-range index"
+                )
+
+            # 同じlocusを複数回指定しない
+            if len(np.unique(exchange_loci_array)) != len(
+                exchange_loci_array
+            ):
+                raise ValueError(
+                    "exchange_loci must contain unique indices"
+                )
+
         # 親のエネルギーを消費
         self.energy -= reproduction_cost
         
         # 子のゲノムは親のコピー
         child_genome = self.genome.copy()
+
+        # -------------------------
+        # 遺伝子交換
+        # -------------------------
+
+        if (
+            donor_genome is not None
+            and len(exchange_loci_array) > 0
+        ):
+            child_genome[exchange_loci_array] = (
+                donor_genome[exchange_loci_array]
+            )
         
         # 変異を適用
         for i in range(len(child_genome)):

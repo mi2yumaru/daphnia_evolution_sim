@@ -48,6 +48,42 @@ class Simulation:
         org_config = config["organism"]
         gen_config = config["genetics"]
 
+        gene_exchange_config = config.get(
+            "gene_exchange",
+            {},
+        )
+
+        self.gene_exchange_enabled = bool(
+            gene_exchange_config.get(
+                "enabled",
+                False,
+            )
+        )
+
+        self.gene_exchange_probability = float(
+            gene_exchange_config.get(
+                "probability",
+                0.0,
+            )
+        )
+
+        self.gene_exchange_fraction = float(
+            gene_exchange_config.get(
+                "fraction",
+                0.0,
+        )
+        )
+
+        if not 0.0 <= self.gene_exchange_probability <= 1.0:
+            raise ValueError(
+                "gene_exchange.probability must be between 0.0 and 1.0"
+            )
+
+        if not 0.0 <= self.gene_exchange_fraction <= 0.5:
+            raise ValueError(
+                "gene_exchange.fraction must be between 0.0 and 0.5"
+            )
+
         # -------------------------
         # 年間時間スケール
         # -------------------------
@@ -124,6 +160,16 @@ class Simulation:
                 [
                     int(sim_config["random_seed"]),
                     2,
+                ]
+            )
+        )
+
+        # 遺伝子交換専用の独立した乱数生成器
+        self.gene_exchange_rng = np.random.default_rng(
+            np.random.SeedSequence(
+                [
+                    int(sim_config["random_seed"]),
+                    3,
                 ]
             )
         )
@@ -286,6 +332,10 @@ class Simulation:
     def _register_lineage(
         self,
         organism: Organism,
+        gene_exchange_occurred: bool = False,
+        donor: Organism | None = None,
+        selected_loci_count: int = 0,
+        changed_bit_count: int = 0,
     ) -> None:
         """
         個体の出生情報を系譜レジストリに登録する。
@@ -312,6 +362,20 @@ class Simulation:
 
             "death_step": None,
             "death_cause": None,
+
+            "gene_exchange_occurred": gene_exchange_occurred,
+            "gene_exchange_donor_id": (
+                donor.organism_id
+                if donor is not None
+                else None
+            ),
+            "gene_exchange_donor_founder_id": (
+                donor.founder_id
+                if donor is not None
+                else None
+            ),
+            "gene_exchange_selected_loci_count": selected_loci_count,
+            "gene_exchange_changed_bit_count": changed_bit_count,
         }
     
     def _sample_lifespan(self) -> int:
@@ -333,6 +397,40 @@ class Simulation:
                 high=self.lifespan_max + 1,
             )
         )
+
+    def _get_gene_exchange_donor_candidates(
+        self,
+        parent: Organism,
+        organisms_by_position: Dict[
+            Tuple[int, int],
+            List[Organism],
+        ],
+    ) -> List[Organism]:
+        """
+        親個体と同一セルおよび周囲8セルから、
+        遺伝子交換donor候補となる別個体を取得する。
+        """
+
+        candidates: List[Organism] = []
+
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                target_position = (
+                    parent.x + dx,
+                    parent.y + dy,
+                )
+
+                for candidate in organisms_by_position.get(
+                    target_position,
+                    [],
+                ):
+                    # 自分自身はdonorにしない
+                    if candidate.organism_id == parent.organism_id:
+                        continue
+
+                    candidates.append(candidate)
+
+        return candidates
     
     @staticmethod
     def _load_seasonal_food_rates(
@@ -604,6 +702,12 @@ class Simulation:
         shared_food_cell_count = 0
         shared_food_consumer_count = 0
 
+        # 遺伝子交換に関するstep単位の統計
+        gene_exchange_eligible_count = 0
+        gene_exchange_event_count = 0
+        gene_exchange_selected_loci_count = 0
+        gene_exchange_changed_bit_count = 0
+
         behavior_settings = {
             "low_energy_threshold_ratio": self.behavior_config.get("low_energy_threshold_ratio", 0.5),
             "food_detection_range": self.behavior_config.get("food_detection_range", 1),
@@ -637,6 +741,19 @@ class Simulation:
                 move_count += 1
 
             movement_records.append((organism, moved))
+
+        # -------------------------
+        # 遺伝子交換donor探索用の位置インデックス
+        # -------------------------
+        organisms_by_position: Dict[
+            Tuple[int, int],
+            List[Organism],
+        ] = defaultdict(list)
+
+        for organism, _ in movement_records:
+            organisms_by_position[
+                (organism.x, organism.y)
+            ].append(organism)
 
         # -------------------------
         # 4. 摂食フェーズ
@@ -701,6 +818,71 @@ class Simulation:
             
             # 5. 繁殖可能なら子個体を作る
             if organism.can_reproduce(org_config["reproduction_threshold"]):
+                donor = None
+                exchange_loci = np.array([], dtype=int)
+                selected_loci_count = 0
+                changed_bit_count = 0
+
+                donor_candidates = (
+                    self._get_gene_exchange_donor_candidates(
+                        organism,
+                        organisms_by_position,
+                    )
+                )
+
+                if donor_candidates:
+                    gene_exchange_eligible_count += 1
+
+                    exchange_occurs = False
+
+                    if self.gene_exchange_enabled:
+                        exchange_occurs = (
+                            self.gene_exchange_rng.random()
+                            < self.gene_exchange_probability
+                        )
+
+                    if exchange_occurs:
+                        gene_exchange_event_count += 1
+
+                        # donorを候補から1個体ランダム選択
+                        donor_index = int(
+                            self.gene_exchange_rng.integers(
+                                len(donor_candidates)
+                            )
+                        )
+                        donor = donor_candidates[donor_index]
+
+                        # donorから受け継ぐlocus数を決定
+                        selected_loci_count = int(
+                            gen_config["genome_length"]
+                            * self.gene_exchange_fraction
+                            + 0.5
+                        )
+
+                        if selected_loci_count > 0:
+                            exchange_loci = (
+                                self.gene_exchange_rng.choice(
+                                    gen_config["genome_length"],
+                                    size=selected_loci_count,
+                                    replace=False,
+                                )
+                            )
+
+                            changed_bit_count = int(
+                                np.sum(
+                                    organism.genome[exchange_loci]
+                                    != donor.genome[exchange_loci]
+                                )
+                            )
+
+                        gene_exchange_selected_loci_count += (
+                            selected_loci_count
+                        )
+
+                        gene_exchange_changed_bit_count += (
+                            changed_bit_count
+                        )
+
                 offspring_lifespan = self._sample_lifespan()
                 child_organism_id = self._allocate_organism_id()
                 
@@ -714,8 +896,21 @@ class Simulation:
                     offspring_lifespan=offspring_lifespan,
                     child_organism_id=child_organism_id,
                     birth_step=self.current_step,
+
+                    donor_genome=(
+                        donor.genome
+                       if donor is not None
+                       else None
+                        ),
+                    exchange_loci=exchange_loci,
                 )
-                self._register_lineage(child)
+                self._register_lineage(
+                    child,
+                    gene_exchange_occurred=(donor is not None),
+                    donor=donor,
+                    selected_loci_count=selected_loci_count,
+                    changed_bit_count=changed_bit_count,
+                )
                 new_offspring.append(child)
         
         # 7. 死亡個体を原因別に集計し、生存個体のみ残す
@@ -763,6 +958,25 @@ class Simulation:
         )
 
         birth_count = len(new_offspring)
+
+        gene_exchange_eligible_rate = (
+            gene_exchange_eligible_count / birth_count
+            if birth_count > 0
+            else 0.0
+        )
+
+        gene_exchange_event_rate = (
+            gene_exchange_event_count
+            / gene_exchange_eligible_count
+            if gene_exchange_eligible_count > 0
+            else 0.0
+        )
+
+        gene_exchange_birth_rate = (
+            gene_exchange_event_count / birth_count
+            if birth_count > 0
+            else 0.0
+        )
         
         # 8. 新しい子個体を追加する
         self.organisms.extend(new_offspring)
@@ -949,6 +1163,13 @@ class Simulation:
             shared_food_consumer_count=shared_food_consumer_count,
             mean_consumers_per_shared_food=mean_consumers_per_shared_food,
             birth_rate=birth_rate,
+            gene_exchange_eligible_count=gene_exchange_eligible_count,
+            gene_exchange_event_count=gene_exchange_event_count,
+            gene_exchange_selected_loci_count=gene_exchange_selected_loci_count,
+            gene_exchange_changed_bit_count=gene_exchange_changed_bit_count,
+            gene_exchange_eligible_rate=gene_exchange_eligible_rate,
+            gene_exchange_event_rate=gene_exchange_event_rate,
+            gene_exchange_birth_rate=gene_exchange_birth_rate,
             death_rate=death_rate,
             age_death_rate=age_death_rate,
             energy_death_rate=energy_death_rate,

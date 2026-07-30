@@ -7,7 +7,7 @@ simulation:
   # duration_modeが"steps"のときに使用
   steps: 1000
   # duration_modeが"years"のときに使用
-  duration_years: 3
+  duration_years: 1
   days_per_year: 365
   steps_per_day: 10
 
@@ -94,7 +94,11 @@ genetics:
   # 現在は 4形質 × 6bit = 24bit
   genome_length: 24
   mutation_rate: 0.01
-  recombination_rate: 0.0
+
+gene_exchange:
+  enabled: false
+  probability: 0.10
+  fraction: 0.20
 
 environment_change:
   enabled: false

@@ -34,6 +34,13 @@ class SimulationLogger:
         average_energy: float,
         average_age: float,
         birth_count: int,
+        gene_exchange_eligible_count: int,
+        gene_exchange_event_count: int,
+        gene_exchange_selected_loci_count: int,
+        gene_exchange_changed_bit_count: int,
+        gene_exchange_eligible_rate: float,
+        gene_exchange_event_rate: float,
+        gene_exchange_birth_rate: float,
         death_count: int,
         age_death_count: int,
         energy_death_count: int,
@@ -111,6 +118,13 @@ class SimulationLogger:
             shared_food_consumer_count: 共有餌を消費した個体数
             mean_consumers_per_shared_food: 共有餌1マスあたりの平均摂食個体数
             birth_rate: 繁殖率
+            gene_exchange_eligible_count: このステップで出生した個体のうち、donor候補が1個体以上存在した繁殖数
+            gene_exchange_event_count: このステップで実際に遺伝子交換イベントが発生した繁殖数
+            gene_exchange_selected_loci_count: このステップの遺伝子交換で、donor由来として選択されたlocus数の合計
+            gene_exchange_changed_bit_count: donor由来として選択されたlocusのうち、親とdonorでbit値が異なっていたlocus数の合計
+            gene_exchange_eligible_rate: 全出生数に対してdonor候補が存在した繁殖の割合
+            gene_exchange_event_rate: donor候補が存在した繁殖のうち、実際に遺伝子交換イベントが発生した割合
+            gene_exchange_birth_rate: 全出生数に対して遺伝子交換イベントが発生した割合
             death_rate: 死亡率
             age_death_rate: 年齢による死亡率
             energy_death_rate: エネルギーによる死亡率
@@ -145,6 +159,13 @@ class SimulationLogger:
             "average_energy": average_energy,
             "average_age": average_age,
             "birth_count": birth_count,
+            "gene_exchange_eligible_count": gene_exchange_eligible_count,
+            "gene_exchange_event_count": gene_exchange_event_count,
+            "gene_exchange_selected_loci_count": gene_exchange_selected_loci_count,
+            "gene_exchange_changed_bit_count": gene_exchange_changed_bit_count,
+            "gene_exchange_eligible_rate": gene_exchange_eligible_rate,
+            "gene_exchange_event_rate": gene_exchange_event_rate,
+            "gene_exchange_birth_rate": gene_exchange_birth_rate,
             "death_count": death_count,
             "age_death_count": age_death_count,
             "energy_death_count": energy_death_count,
