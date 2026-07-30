@@ -5,6 +5,7 @@ visualizer.py - シミュレーション結果の可視化
 """
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
@@ -76,7 +77,7 @@ COMMON_PLOT_SPECS = [
         "metrics": [("birth_count", "Birth Count"), ("age_death_count", "Age Death Count"), ("energy_death_count", "Energy Death Count")],
         "title": "Birth and Death Counts Over Time",
         "ylabel": "Count",
-        "output_name": "birth_count.png",
+        "output_name": "birth_death_counts.png",
         "aggregate_output_name": "birth_death_counts_mean_std.png",
     },
     {
@@ -136,6 +137,42 @@ COMMON_PLOT_SPECS = [
         "output_name": "food_dynamics.png",
         "aggregate_output_name": "food_dynamics_mean_std.png",
     },
+    {
+        "name": "gene_exchange_events",
+        "metrics": [
+            ("birth_count", "Birth Count"),
+            ("gene_exchange_eligible_count", "Eligible Births"),
+            ("gene_exchange_event_count", "Gene Exchange Events"),
+        ],
+        "title": "Gene Exchange Events Over Time",
+        "ylabel": "Count",
+        "output_name": "gene_exchange_events.png",
+        "aggregate_output_name": "gene_exchange_events_mean_std.png",
+    },
+    {
+        "name": "gene_exchange_loci",
+        "metrics": [
+            ("gene_exchange_selected_loci_count", "Selected Donor Loci"),
+            ("gene_exchange_changed_bit_count", "Actually Changed Bits"),
+        ],
+        "title": "Gene Exchange Loci Over Time",
+        "ylabel": "Loci Count",
+        "output_name": "gene_exchange_loci.png",
+        "aggregate_output_name": "gene_exchange_loci_mean_std.png",
+    },
+    {
+        "name": "gene_exchange_rates",
+        "metrics": [
+            ("gene_exchange_eligible_rate", "Eligible Rate"),
+            ("gene_exchange_event_rate_plot", "Event Rate"),
+            ("gene_exchange_birth_rate", "Gene Exchange Birth Rate"),
+        ],
+        "title": "Gene Exchange Rates Over Time",
+        "ylabel": "Rate",
+        "output_name": "gene_exchange_rates.png",
+        "aggregate_output_name": "gene_exchange_rates_mean_std.png",
+        "fixed_ylim": (0.0, 1.05),
+    },
 ]
 
 
@@ -173,6 +210,20 @@ def add_derived_metrics(df: pd.DataFrame) -> pd.DataFrame:
         )
     else:
         result["mean_consumers_per_shared_food_plot"] = pd.NA
+
+    # 遺伝子交換候補が存在しないstepでは、
+    # event rateは「0」ではなく「評価対象なし」として描画しない
+    if {
+        "gene_exchange_event_rate",
+        "gene_exchange_eligible_count",
+    }.issubset(result.columns):
+        result["gene_exchange_event_rate_plot"] = (
+            result["gene_exchange_event_rate"].where(
+                result["gene_exchange_eligible_count"] > 0
+            )
+        )
+    else:
+        result["gene_exchange_event_rate_plot"] = np.nan
 
     return result
 
@@ -263,45 +314,6 @@ def plot_average_age(df: pd.DataFrame, output_path: str) -> None:
         "Average Age Over Time",
         "Average Age",
     )
-
-
-def plot_birth_count(df: pd.DataFrame, output_path: str) -> None:
-    """
-    誕生個体数の時系列グラフを生成して保存
-    
-    Args:
-        df: ログデータを持つDataFrame
-        output_path: 保存先のファイルパス
-    """
-    plt.figure(figsize=(10, 6))
-    plt.plot(df["step"], df["birth_count"], linewidth=2, color="red")
-    plt.title("Birth Count Over Time")
-    plt.xlabel("Step")
-    plt.ylabel("Number of Births")
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=150)
-    plt.close()
-
-
-def plot_death_count(df: pd.DataFrame, output_path: str) -> None:
-    """
-    死亡個体数の時系列グラフを生成して保存
-    
-    Args:
-        df: ログデータを持つDataFrame
-        output_path: 保存先のファイルパス
-    """
-    plt.figure(figsize=(10, 6))
-    plt.plot(df["step"], df["death_count"], linewidth=2, color="black")
-    plt.title("Death Count Over Time")
-    plt.xlabel("Step")
-    plt.ylabel("Number of Deaths")
-    plt.grid(True, alpha=0.3)
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=150)
-    plt.close()
-
 
 def plot_behavior_traits(df: pd.DataFrame, output_path: str) -> None:
     """Compatibility wrapper for the behavior-traits average plot."""
@@ -689,8 +701,6 @@ def save_all_single_run_plots(
                 fixed_ylim=spec.get("fixed_ylim"),
             )
 
-    plot_birth_count(df, str(output_dir / "birth_count.png"))
-    plot_death_count(df, str(output_dir / "death_count.png"))
     plot_behavior_trait_std(df, str(output_dir / "behavior_trait_std.png"))
 
     plot_trait_range(

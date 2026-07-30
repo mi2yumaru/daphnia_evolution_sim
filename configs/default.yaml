@@ -96,9 +96,11 @@ genetics:
   mutation_rate: 0.01
 
 gene_exchange:
-  enabled: false
-  probability: 0.10
-  fraction: 0.20
+  enabled: true
+  # 遺伝子交換確率
+  probability: 1.00
+  # 遺伝子交換割合
+  fraction: 0.50
 
 environment_change:
   enabled: false
