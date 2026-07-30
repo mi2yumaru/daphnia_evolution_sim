@@ -142,6 +142,24 @@ def create_summary(all_logs: list[pd.DataFrame]) -> pd.DataFrame:
                 df["average_risk_tolerance"].iloc[-1],
             "final_reproduction_timing":
                 df["average_reproduction_timing"].iloc[-1],
+            "mean_gene_exchange_eligible_rate_last_100":
+                tail["gene_exchange_eligible_rate"].mean(),
+            "mean_gene_exchange_event_rate_last_100":
+                tail["gene_exchange_event_rate_plot"].mean(),
+            "mean_gene_exchange_birth_rate_last_100":
+                tail["gene_exchange_birth_rate"].mean(),
+            "mean_gene_exchange_event_count_last_100":
+                tail["gene_exchange_event_count"].mean(),
+            "mean_gene_exchange_selected_loci_count_last_100":
+                tail["gene_exchange_selected_loci_count"].mean(),
+            "mean_gene_exchange_changed_bit_count_last_100":
+                tail["gene_exchange_changed_bit_count"].mean(),
+            "total_gene_exchange_events":
+                df["gene_exchange_event_count"].sum(),
+            "total_gene_exchange_selected_loci":
+                df["gene_exchange_selected_loci_count"].sum(),
+            "total_gene_exchange_changed_bits":
+                df["gene_exchange_changed_bit_count"].sum(),
         })
 
     summary_df = pd.DataFrame(rows)
