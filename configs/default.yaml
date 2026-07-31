@@ -91,9 +91,9 @@ organism:
   move_type: "moore"  # moore(8) or von_neumann(4)
 
 genetics:
-  # 現在は 6形質 × 6bit = 36bit
-  genome_length: 36
-  mutation_rate: 0.01
+  # 現在は 6形質 × 20 loci = 120 loci
+  genome_length: 120
+  mutation_rate: 0.002
 
 gene_exchange:
   enabled: true

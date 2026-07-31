@@ -20,7 +20,7 @@ class Organism:
         age: 個体の年齢（ステップ数）
         genome: 0/1 のゲノム配列
     """
-    TRAIT_BITS = 6
+    LOCI_PER_TRAIT = 20
 
     TRAIT_LABELS = [
         "exploration_tendency",
@@ -30,6 +30,42 @@ class Organism:
         "gene_exchange_probability",
         "gene_exchange_fraction",
     ]
+
+    @classmethod
+    def _generate_random_genome(cls) -> np.ndarray:
+        """
+        各形質について、1のlocus数を0〜LOCI_PER_TRAITから
+        一様に選び、初期ゲノムを生成する。
+        """
+        segments = []
+
+        for _ in cls.TRAIT_LABELS:
+            # 形質値の段階を0〜20から一様に選ぶ
+            ones_count = np.random.randint(
+                0,
+                cls.LOCI_PER_TRAIT + 1,
+            )
+
+            # 最初は全部0
+            segment = np.zeros(
+                cls.LOCI_PER_TRAIT,
+                dtype=int,
+            )
+
+            # ones_count個だけランダムな位置を1にする
+            if ones_count > 0:
+                one_indices = np.random.choice(
+                    cls.LOCI_PER_TRAIT,
+                    size=ones_count,
+                    replace=False,
+                )
+
+                segment[one_indices] = 1
+
+            segments.append(segment)
+
+        # 6形質分をつなげて120 lociのゲノムにする
+        return np.concatenate(segments)
     
     def __init__(
         self,
@@ -54,7 +90,7 @@ class Organism:
             y: 初期y座標
             initial_energy: 初期エネルギー値
             genome_length: ゲノム長
-            genome: ゲノム配列。Noneの場合は0/1ランダムで初期化
+            genome: ゲノム配列。NNoneの場合は各形質値が広く分布するように初期化
             initial_age: 初期年齢。デフォルトは0
             lifespan: 個体の寿命。Noneの場合は死亡判定時のmax_ageを使用
             organism_id: 個体のID
@@ -98,24 +134,29 @@ class Organism:
         self.generation: int = generation
         self.birth_step: int = birth_step
 
-        expected_genome_length = len(self.TRAIT_LABELS) * self.TRAIT_BITS
+        expected_genome_length = len(self.TRAIT_LABELS) * self.LOCI_PER_TRAIT
 
         if genome_length != expected_genome_length:
             raise ValueError(
                 f"genome_length must be {expected_genome_length} "
-                f"({len(self.TRAIT_LABELS)} traits × {self.TRAIT_BITS} bits), "
+                f"({len(self.TRAIT_LABELS)} traits × "
+                f"{self.LOCI_PER_TRAIT} loci), "
                 f"got {genome_length}"
             )
 
         if genome is None:
-            # ランダムな0/1配列で初期化
-            self.genome: np.ndarray = np.random.randint(0, 2, size=genome_length)
+            # 各形質のphenotypeが0〜1の範囲に
+            # 広く分布するように初期ゲノムを生成
+            self.genome: np.ndarray = (
+                self._generate_random_genome()
+            )
         else:
             if len(genome) != genome_length:
                 raise ValueError(
                     f"Genome length mismatch: "
                     f"expected {genome_length}, got {len(genome)}"
                 )
+
             self.genome: np.ndarray = genome.copy()
 
         self.phenotype: Dict[str, float] = self.calculate_phenotype()
@@ -123,25 +164,32 @@ class Organism:
         self.last_food_step: Optional[int] = None
     
     def calculate_phenotype(self) -> Dict[str, float]:
-        """ゲノムから phenotype を計算する"""
+        """
+        各形質に対応するlocusのうち、
+        1であるlocusの割合からphenotypeを計算する。
+        """
         phenotypes = {}
 
-        max_value = (1 << self.TRAIT_BITS) - 1
-
         for idx, label in enumerate(self.TRAIT_LABELS):
-            start = idx * self.TRAIT_BITS
+            start = idx * self.LOCI_PER_TRAIT
+
             segment = self.genome[
-                start:start + self.TRAIT_BITS
+                start:start + self.LOCI_PER_TRAIT
             ].astype(int)
 
-            value = 0
-            for bit in segment:
-                value = (value << 1) | int(bit)
+            # 1になっているlocus数
+            ones_count = int(segment.sum())
 
-            normalized_value = value / max_value
+            # 0〜1に正規化
+            normalized_value = (
+                ones_count / self.LOCI_PER_TRAIT
+            )
 
+            # gene_exchange_fractionだけ0〜0.5
             if label == "gene_exchange_fraction":
-                phenotypes[label] = 0.5 * normalized_value
+                phenotypes[label] = (
+                    0.5 * normalized_value
+                )
             else:
                 phenotypes[label] = normalized_value
 
@@ -447,7 +495,7 @@ class Organism:
         # 変異を適用
         for i in range(len(child_genome)):
             if np.random.random() < mutation_rate:
-                child_genome[i] = 1 - child_genome[i]  # ビット反転
+                child_genome[i] = 1 - child_genome[i]  # 0/1反転
         
         # 子個体を親の近くにランダムに配置
         # 親の位置から±2以内の範囲にランダムに配置
