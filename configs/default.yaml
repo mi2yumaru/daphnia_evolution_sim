@@ -5,7 +5,7 @@ simulation:
   duration_mode: "years"
 
   # duration_modeが"steps"のときに使用
-  steps: 1000
+  steps: 100
   # duration_modeが"years"のときに使用
   duration_years: 1
   days_per_year: 365
@@ -91,12 +91,16 @@ organism:
   move_type: "moore"  # moore(8) or von_neumann(4)
 
 genetics:
-  # 現在は 4形質 × 6bit = 24bit
-  genome_length: 24
+  # 現在は 6形質 × 6bit = 36bit
+  genome_length: 36
   mutation_rate: 0.01
 
 gene_exchange:
   enabled: true
+  # "fixed": probability / fraction の固定値を全個体で使用
+  # "evolvable": 個体の genome にコードされた値を使用
+  mode: "evolvable"
+  # mode="fixed" のときに使用
   # 遺伝子交換確率
   probability: 1.00
   # 遺伝子交換割合

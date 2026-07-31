@@ -27,6 +27,8 @@ class Organism:
         "site_fidelity",
         "risk_tolerance",
         "reproduction_timing",
+        "gene_exchange_probability",
+        "gene_exchange_fraction",
     ]
     
     def __init__(
@@ -136,7 +138,12 @@ class Organism:
             for bit in segment:
                 value = (value << 1) | int(bit)
 
-            phenotypes[label] = value / max_value
+            normalized_value = value / max_value
+
+            if label == "gene_exchange_fraction":
+                phenotypes[label] = 0.5 * normalized_value
+            else:
+                phenotypes[label] = normalized_value
 
         return phenotypes
 

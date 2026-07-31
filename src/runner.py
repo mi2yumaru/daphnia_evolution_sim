@@ -199,6 +199,8 @@ def build_lineage_strategy_summary(
             "founder_site_fidelity": founder["birth_site_fidelity"],
             "founder_risk_tolerance": founder["birth_risk_tolerance"],
             "founder_reproduction_timing": founder["birth_reproduction_timing"],
+            "founder_gene_exchange_probability": founder["birth_gene_exchange_probability"],
+            "founder_gene_exchange_fraction": founder["birth_gene_exchange_fraction"],
 
             # 最終生存個体の戦略
             "final_mean_exploration_tendency": (
@@ -260,6 +262,38 @@ def build_lineage_strategy_summary(
             "final_std_reproduction_timing": (
                 alive_group[
                     "birth_reproduction_timing"
+                ].std(ddof=0)
+                if final_alive_count > 0
+                else pd.NA
+            ),
+
+            "final_mean_gene_exchange_probability": (
+                alive_group[
+                        "birth_gene_exchange_probability"
+                ].mean()
+                if final_alive_count > 0
+                else pd.NA
+            ),
+
+            "final_std_gene_exchange_probability": (
+                alive_group[
+                    "birth_gene_exchange_probability"
+                ].std(ddof=0)
+                if final_alive_count > 0
+                else pd.NA
+            ),
+
+            "final_mean_gene_exchange_fraction": (
+                alive_group[
+                    "birth_gene_exchange_fraction"
+                ].mean()
+                if final_alive_count > 0
+                else pd.NA
+            ),
+
+            "final_std_gene_exchange_fraction": (
+                alive_group[
+                    "birth_gene_exchange_fraction"
                 ].std(ddof=0)
                 if final_alive_count > 0
                 else pd.NA

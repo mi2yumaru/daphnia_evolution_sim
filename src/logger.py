@@ -78,6 +78,14 @@ class SimulationLogger:
         std_reproduction_timing: float,
         min_reproduction_timing: float,
         max_reproduction_timing: float,
+        average_gene_exchange_probability: float,
+        std_gene_exchange_probability: float,
+        min_gene_exchange_probability: float,
+        max_gene_exchange_probability: float,
+        average_gene_exchange_fraction: float,
+        std_gene_exchange_fraction: float,
+        min_gene_exchange_fraction: float,
+        max_gene_exchange_fraction: float,
         active_lineage_count: int,
         largest_lineage_share: float,
         average_generation: float,
@@ -140,6 +148,14 @@ class SimulationLogger:
             std_reproduction_timing: 繁殖タイミングの標準偏差
             min_reproduction_timing: 繁殖タイミングの最小値
             max_reproduction_timing: 繁殖タイミングの最大値
+            average_gene_exchange_probability: 遺伝子交換確率の平均値
+            std_gene_exchange_probability: 遺伝子交換確率の標準偏差
+            min_gene_exchange_probability: 遺伝子交換確率の最小値
+            max_gene_exchange_probability: 遺伝子交換確率の最大値
+            average_gene_exchange_fraction: 遺伝子交換割合の平均値
+            std_gene_exchange_fraction: 遺伝子交換割合の標準偏差
+            min_gene_exchange_fraction: 遺伝子交換割合の最小値
+            max_gene_exchange_fraction: 遺伝子交換割合の最大値
             active_lineage_count: 現在生存しているFounder系統数
             largest_lineage_share: 最大系統が集団に占める割合
             average_generation: 現在の集団の平均世代
@@ -203,6 +219,14 @@ class SimulationLogger:
             "std_reproduction_timing": std_reproduction_timing,
             "min_reproduction_timing": min_reproduction_timing,
             "max_reproduction_timing": max_reproduction_timing,
+            "average_gene_exchange_probability": average_gene_exchange_probability,
+            "std_gene_exchange_probability": std_gene_exchange_probability,
+            "min_gene_exchange_probability": min_gene_exchange_probability,
+            "max_gene_exchange_probability": max_gene_exchange_probability,
+            "average_gene_exchange_fraction": average_gene_exchange_fraction,
+            "std_gene_exchange_fraction": std_gene_exchange_fraction,
+            "min_gene_exchange_fraction": min_gene_exchange_fraction,
+            "max_gene_exchange_fraction": max_gene_exchange_fraction,
             "active_lineage_count": active_lineage_count,
             "largest_lineage_share": largest_lineage_share,
             "average_generation": average_generation,

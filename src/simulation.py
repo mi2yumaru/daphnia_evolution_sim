@@ -53,6 +53,22 @@ class Simulation:
             {},
         )
 
+        self.gene_exchange_mode = str(
+            gene_exchange_config.get(
+                "mode",
+                "fixed",
+            )
+        )
+
+        if self.gene_exchange_mode not in {
+            "fixed",
+            "evolvable",
+        }:
+            raise ValueError(
+                "gene_exchange.mode must be "
+                "'fixed' or 'evolvable'"
+            )
+
         self.gene_exchange_enabled = bool(
             gene_exchange_config.get(
                 "enabled",
@@ -359,6 +375,8 @@ class Simulation:
             "birth_site_fidelity": organism.phenotype["site_fidelity"],
             "birth_risk_tolerance": organism.phenotype["risk_tolerance"],
             "birth_reproduction_timing": organism.phenotype["reproduction_timing"],
+            "birth_gene_exchange_probability": organism.phenotype["gene_exchange_probability"],
+            "birth_gene_exchange_fraction": organism.phenotype["gene_exchange_fraction"],
 
             "death_step": None,
             "death_cause": None,
@@ -823,6 +841,32 @@ class Simulation:
                 selected_loci_count = 0
                 changed_bit_count = 0
 
+                # --------------------------------
+                # この親個体が使用する遺伝子交換戦略を決定
+                # --------------------------------
+                if self.gene_exchange_mode == "evolvable":
+                    current_exchange_probability = float(
+                        organism.phenotype[
+                            "gene_exchange_probability"
+                        ]
+                    )
+
+                    current_exchange_fraction = float(
+                        organism.phenotype[
+                            "gene_exchange_fraction"
+                        ]
+                    )
+
+                else:
+                    current_exchange_probability = (
+                        self.gene_exchange_probability
+                    )
+
+                    current_exchange_fraction = (
+                        self.gene_exchange_fraction
+                    )
+
+
                 donor_candidates = (
                     self._get_gene_exchange_donor_candidates(
                         organism,
@@ -838,7 +882,7 @@ class Simulation:
                     if self.gene_exchange_enabled:
                         exchange_occurs = (
                             self.gene_exchange_rng.random()
-                            < self.gene_exchange_probability
+                            < current_exchange_probability
                         )
 
                     if exchange_occurs:
@@ -855,7 +899,7 @@ class Simulation:
                         # donorから受け継ぐlocus数を決定
                         selected_loci_count = int(
                             gen_config["genome_length"]
-                            * self.gene_exchange_fraction
+                            * current_exchange_fraction
                             + 0.5
                         )
 
@@ -1043,16 +1087,22 @@ class Simulation:
             site_fidelity_values = [org.phenotype["site_fidelity"] for org in self.organisms]
             risk_tolerance_values = [org.phenotype["risk_tolerance"] for org in self.organisms]
             reproduction_timing_values = [org.phenotype["reproduction_timing"] for org in self.organisms]
+            gene_exchange_probability_values = [org.phenotype["gene_exchange_probability"]for org in self.organisms]
+            gene_exchange_fraction_values = [org.phenotype["gene_exchange_fraction"]for org in self.organisms]
 
             average_exploration_tendency = sum(org.phenotype["exploration_tendency"] for org in self.organisms) / population_size
             average_site_fidelity = sum(org.phenotype["site_fidelity"] for org in self.organisms) / population_size
             average_risk_tolerance = sum(org.phenotype["risk_tolerance"] for org in self.organisms) / population_size
             average_reproduction_timing = sum(org.phenotype["reproduction_timing"] for org in self.organisms) / population_size
+            average_gene_exchange_probability = (sum(gene_exchange_probability_values)/ population_size)
+            average_gene_exchange_fraction = (sum(gene_exchange_fraction_values)/ population_size)
         
             std_exploration_tendency = float(np.std(exploration_values))
             std_site_fidelity = float(np.std(site_fidelity_values))
             std_risk_tolerance = float(np.std(risk_tolerance_values))
             std_reproduction_timing = float(np.std(reproduction_timing_values))
+            std_gene_exchange_probability = float(np.std(gene_exchange_probability_values))
+            std_gene_exchange_fraction = float(np.std(gene_exchange_fraction_values))
 
             min_exploration_tendency = min(exploration_values)
             max_exploration_tendency = max(exploration_values)
@@ -1065,6 +1115,12 @@ class Simulation:
 
             min_reproduction_timing = min(reproduction_timing_values)
             max_reproduction_timing = max(reproduction_timing_values)
+
+            min_gene_exchange_probability = min(gene_exchange_probability_values)
+            max_gene_exchange_probability = max(gene_exchange_probability_values)
+
+            min_gene_exchange_fraction = min(gene_exchange_fraction_values)
+            max_gene_exchange_fraction = max(gene_exchange_fraction_values)
         
         else:
             average_energy = 0.0
@@ -1073,11 +1129,15 @@ class Simulation:
             average_site_fidelity = 0.0
             average_risk_tolerance = 0.0
             average_reproduction_timing = 0.0
+            average_gene_exchange_probability = 0.0
+            average_gene_exchange_fraction = 0.0
 
             std_exploration_tendency = 0.0
             std_site_fidelity = 0.0
             std_risk_tolerance = 0.0
             std_reproduction_timing = 0.0
+            std_gene_exchange_probability = 0.0
+            std_gene_exchange_fraction = 0.0
 
             min_exploration_tendency = 0.0
             max_exploration_tendency = 0.0
@@ -1090,6 +1150,12 @@ class Simulation:
 
             min_reproduction_timing = 0.0
             max_reproduction_timing = 0.0
+
+            min_gene_exchange_probability = 0.0
+            max_gene_exchange_probability = 0.0
+
+            min_gene_exchange_fraction = 0.0
+            max_gene_exchange_fraction = 0.0
 
         # 系譜統計を計算
         if population_size > 0:
@@ -1189,6 +1255,14 @@ class Simulation:
             std_reproduction_timing=std_reproduction_timing,
             min_reproduction_timing=min_reproduction_timing,
             max_reproduction_timing=max_reproduction_timing,
+            average_gene_exchange_probability=average_gene_exchange_probability,
+            std_gene_exchange_probability=std_gene_exchange_probability,
+            min_gene_exchange_probability=min_gene_exchange_probability,
+            max_gene_exchange_probability=max_gene_exchange_probability,
+            average_gene_exchange_fraction=average_gene_exchange_fraction,
+            std_gene_exchange_fraction=std_gene_exchange_fraction,
+            min_gene_exchange_fraction=min_gene_exchange_fraction,
+            max_gene_exchange_fraction=max_gene_exchange_fraction,
             active_lineage_count=active_lineage_count,
             largest_lineage_share=largest_lineage_share,
             average_generation=average_generation,
