@@ -161,16 +161,37 @@ COMMON_PLOT_SPECS = [
         "aggregate_output_name": "gene_exchange_loci_mean_std.png",
     },
     {
-        "name": "gene_exchange_rates",
+        "name": "gene_exchange_opportunity",
         "metrics": [
-            ("gene_exchange_eligible_rate", "Eligible Rate"),
-            ("gene_exchange_event_rate_plot", "Event Rate"),
-            ("gene_exchange_birth_rate", "Gene Exchange Birth Rate"),
+            (
+                "gene_exchange_eligible_rate",
+                "Eligible Birth Rate"
+            ),
         ],
-        "title": "Gene Exchange Rates Over Time",
+        "title": "Gene Exchange Opportunity Over Time",
         "ylabel": "Rate",
-        "output_name": "gene_exchange_rates.png",
-        "aggregate_output_name": "gene_exchange_rates_mean_std.png",
+        "output_name": "gene_exchange_opportunity.png",
+        "aggregate_output_name":
+            "gene_exchange_opportunity_mean_std.png",
+        "fixed_ylim": (0.0, 1.05),
+    },
+    {
+        "name": "gene_exchange_realization",
+        "metrics": [
+            (
+                "gene_exchange_event_rate_plot",
+                "Event Rate Among Eligible Births"
+            ),
+            (
+                "gene_exchange_birth_rate",
+                "Gene Exchange Birth Rate"
+            ),
+        ],
+        "title": "Gene Exchange Realization Over Time",
+        "ylabel": "Rate",
+        "output_name": "gene_exchange_realization.png",
+        "aggregate_output_name":
+            "gene_exchange_realization_mean_std.png",
         "fixed_ylim": (0.0, 1.05),
     },
     {
