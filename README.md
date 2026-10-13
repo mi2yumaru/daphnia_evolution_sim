@@ -167,7 +167,7 @@ environment:
 ```yaml
 seasonal_food:
   enabled: true
-  csv_path: "data/kasumigaura_sta9_food_respawn_365_v3.csv"
+  csv_path: "data/kasumigaura_sta9_food_respawn_365_mean002.csv"
 ```
 
 CSVには、少なくとも次の列が必要です。
@@ -710,7 +710,7 @@ daphnia_evolution_sim/
 ├─ configs/
 │  └─ default.yaml
 ├─ data/
-│  └─ kasumigaura_sta9_food_respawn_365_v3.csv
+│  └─ kasumigaura_sta9_food_respawn_365_mean002.csv
 ├─ results/
 │  ├─ single_runs/
 │  └─ experiments/

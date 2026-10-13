@@ -50,7 +50,7 @@ seasonal_food:
   #   environment.food_respawn_rate の固定値を使用
   enabled: true
 
-  csv_path: "data/kasumigaura_sta9_food_respawn_365_v3.csv"
+  csv_path: "data/kasumigaura_sta9_food_respawn_365_mean002.csv"
 
 behavior:
   low_energy_threshold_ratio: 0.5
