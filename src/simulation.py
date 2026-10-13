@@ -726,6 +726,9 @@ class Simulation:
         gene_exchange_selected_loci_count = 0
         gene_exchange_changed_bit_count = 0
 
+        # 実際に1bit以上変化した繁殖回数
+        gene_exchange_effective_count = 0
+
         behavior_settings = {
             "low_energy_threshold_ratio": self.behavior_config.get("low_energy_threshold_ratio", 0.5),
             "food_detection_range": self.behavior_config.get("food_detection_range", 1),
@@ -919,6 +922,10 @@ class Simulation:
                                 )
                             )
 
+                            # 交換によって1bit以上変化した場合に加算
+                            if changed_bit_count > 0:
+                                gene_exchange_effective_count += 1
+
                         gene_exchange_selected_loci_count += (
                             selected_loci_count
                         )
@@ -1021,7 +1028,22 @@ class Simulation:
             if birth_count > 0
             else 0.0
         )
-        
+
+        # 交換イベントのうち実際に1bit以上変化した割合
+        gene_exchange_effective_rate = (
+            gene_exchange_effective_count
+            / gene_exchange_event_count
+            if gene_exchange_event_count > 0
+            else 0.0
+        )
+
+        # 全出生数のうち実際に1bit以上変化した割合
+        gene_exchange_effective_birth_rate = (
+            gene_exchange_effective_count / birth_count
+            if birth_count > 0
+            else 0.0
+        )
+    
         # 8. 新しい子個体を追加する
         self.organisms.extend(new_offspring)
         
@@ -1236,6 +1258,9 @@ class Simulation:
             gene_exchange_eligible_rate=gene_exchange_eligible_rate,
             gene_exchange_event_rate=gene_exchange_event_rate,
             gene_exchange_birth_rate=gene_exchange_birth_rate,
+            gene_exchange_effective_count=gene_exchange_effective_count,
+            gene_exchange_effective_rate=gene_exchange_effective_rate,
+            gene_exchange_effective_birth_rate=gene_exchange_effective_birth_rate,
             death_rate=death_rate,
             age_death_rate=age_death_rate,
             energy_death_rate=energy_death_rate,

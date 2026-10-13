@@ -41,6 +41,9 @@ class SimulationLogger:
         gene_exchange_eligible_rate: float,
         gene_exchange_event_rate: float,
         gene_exchange_birth_rate: float,
+        gene_exchange_effective_count: int,
+        gene_exchange_effective_rate: float,
+        gene_exchange_effective_birth_rate: float,
         death_count: int,
         age_death_count: int,
         energy_death_count: int,
@@ -133,6 +136,9 @@ class SimulationLogger:
             gene_exchange_eligible_rate: 全出生数に対してdonor候補が存在した繁殖の割合
             gene_exchange_event_rate: donor候補が存在した繁殖のうち、実際に遺伝子交換イベントが発生した割合
             gene_exchange_birth_rate: 全出生数に対して遺伝子交換イベントが発生した割合
+            gene_exchange_effective_count: 遺伝子交換によって1bit以上変化した繁殖回数
+            gene_exchange_effective_rate: 交換イベントのうち1bit以上変化した割合
+            gene_exchange_effective_birth_rate: 全出生数のうち交換によって1bit以上変化した割合
             death_rate: 死亡率
             age_death_rate: 年齢による死亡率
             energy_death_rate: エネルギーによる死亡率
@@ -182,6 +188,9 @@ class SimulationLogger:
             "gene_exchange_eligible_rate": gene_exchange_eligible_rate,
             "gene_exchange_event_rate": gene_exchange_event_rate,
             "gene_exchange_birth_rate": gene_exchange_birth_rate,
+            "gene_exchange_effective_count": gene_exchange_effective_count,
+            "gene_exchange_effective_rate": gene_exchange_effective_rate,
+            "gene_exchange_effective_birth_rate": gene_exchange_effective_birth_rate,
             "death_count": death_count,
             "age_death_count": age_death_count,
             "energy_death_count": energy_death_count,

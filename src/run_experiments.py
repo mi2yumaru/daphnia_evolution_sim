@@ -168,6 +168,22 @@ def create_summary(all_logs: list[pd.DataFrame]) -> pd.DataFrame:
                 df["gene_exchange_selected_loci_count"].sum(),
             "total_gene_exchange_changed_bits":
                 df["gene_exchange_changed_bit_count"].sum(),
+            "mean_gene_exchange_effective_birth_rate_last_100":
+                tail["gene_exchange_effective_birth_rate"].mean(),
+            "total_gene_exchange_effective_count":
+                df["gene_exchange_effective_count"].sum(),
+            "overall_gene_exchange_effective_rate": (
+                df["gene_exchange_effective_count"].sum()
+                / df["gene_exchange_event_count"].sum()
+                if df["gene_exchange_event_count"].sum() > 0
+                else float("nan")
+            ),
+            "overall_gene_exchange_effective_birth_rate": (
+                df["gene_exchange_effective_count"].sum()
+                / df["birth_count"].sum()
+                if df["birth_count"].sum() > 0
+                else float("nan")
+            ),
         })
 
     summary_df = pd.DataFrame(rows)

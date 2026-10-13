@@ -143,6 +143,7 @@ COMMON_PLOT_SPECS = [
             ("birth_count", "Birth Count"),
             ("gene_exchange_eligible_count", "Eligible Births"),
             ("gene_exchange_event_count", "Gene Exchange Events"),
+            ("gene_exchange_effective_count", "Effective Exchanges"),
         ],
         "title": "Gene Exchange Events Over Time",
         "ylabel": "Count",
@@ -185,6 +186,14 @@ COMMON_PLOT_SPECS = [
             (
                 "gene_exchange_birth_rate",
                 "Gene Exchange Birth Rate"
+            ),
+            (
+                "gene_exchange_effective_rate_plot",
+                "Effective Rate Among Exchange Events"
+            ),
+            (
+                "gene_exchange_effective_birth_rate",
+                "Effective Exchange Birth Rate"
             ),
         ],
         "title": "Gene Exchange Realization Over Time",
@@ -263,6 +272,19 @@ def add_derived_metrics(df: pd.DataFrame) -> pd.DataFrame:
         )
     else:
         result["gene_exchange_event_rate_plot"] = np.nan
+
+    # 交換イベントが0のstepでは実効交換率を描画しない
+    if {
+        "gene_exchange_effective_rate",
+        "gene_exchange_event_count",
+    }.issubset(result.columns):
+        result["gene_exchange_effective_rate_plot"] = (
+            result["gene_exchange_effective_rate"].where(
+                result["gene_exchange_event_count"] > 0
+            )
+        )
+    else:
+        result["gene_exchange_effective_rate_plot"] = np.nan
 
     return result
 
