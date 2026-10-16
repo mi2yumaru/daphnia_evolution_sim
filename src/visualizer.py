@@ -177,30 +177,52 @@ COMMON_PLOT_SPECS = [
         "fixed_ylim": (0.0, 1.05),
     },
     {
-        "name": "gene_exchange_realization",
+        "name": "gene_exchange_event_rate",
         "metrics": [
             (
                 "gene_exchange_event_rate_plot",
                 "Event Rate Among Eligible Births"
             ),
-            (
-                "gene_exchange_birth_rate",
-                "Gene Exchange Birth Rate"
-            ),
+        ],
+        "title": "Gene Exchange Event Rate Over Time",
+        "ylabel": "Rate",
+        "output_name": "gene_exchange_event_rate.png",
+        "aggregate_output_name":
+            "gene_exchange_event_rate_mean_std.png",
+        "fixed_ylim": (0.0, 1.05),
+    },
+    {
+        "name": "gene_exchange_effective_rate",
+        "metrics": [
             (
                 "gene_exchange_effective_rate_plot",
                 "Effective Rate Among Exchange Events"
+            ),
+        ],
+        "title": "Effective Gene Exchange Rate Over Time",
+        "ylabel": "Rate",
+        "output_name": "gene_exchange_effective_rate.png",
+        "aggregate_output_name":
+            "gene_exchange_effective_rate_mean_std.png",
+        "fixed_ylim": (0.0, 1.05),
+    },
+    {
+        "name": "gene_exchange_birth_rates",
+        "metrics": [
+            (
+                "gene_exchange_birth_rate",
+                "Gene Exchange Birth Rate"
             ),
             (
                 "gene_exchange_effective_birth_rate",
                 "Effective Exchange Birth Rate"
             ),
         ],
-        "title": "Gene Exchange Realization Over Time",
+        "title": "Gene Exchange Birth Rates Over Time",
         "ylabel": "Rate",
-        "output_name": "gene_exchange_realization.png",
+        "output_name": "gene_exchange_birth_rates.png",
         "aggregate_output_name":
-            "gene_exchange_realization_mean_std.png",
+            "gene_exchange_birth_rates_mean_std.png",
         "fixed_ylim": (0.0, 1.05),
     },
     {
