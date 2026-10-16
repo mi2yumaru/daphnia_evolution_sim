@@ -204,22 +204,32 @@ COMMON_PLOT_SPECS = [
         "fixed_ylim": (0.0, 1.05),
     },
     {
-        "name": "gene_exchange_traits",
+        "name": "gene_exchange_probability",
         "metrics": [
             (
                 "average_gene_exchange_probability",
                 "Gene Exchange Probability",
             ),
+        ],
+        "title": "Average Gene Exchange Probability Over Time",
+        "ylabel": "Probability",
+        "output_name": "gene_exchange_probability.png",
+        "aggregate_output_name": "gene_exchange_probability_mean_std.png",
+        "fixed_ylim": (0.0, 1.0),
+    },
+    {
+        "name": "gene_exchange_fraction",
+        "metrics": [
             (
                 "average_gene_exchange_fraction",
                 "Gene Exchange Fraction",
             ),
         ],
-        "title": "Average Gene Exchange Traits Over Time",
-        "ylabel": "Trait Value",
-        "output_name": "gene_exchange_traits.png",
-        "aggregate_output_name": "gene_exchange_traits_mean_std.png",
-        "fixed_ylim": (0.0, 1.0),
+        "title": "Average Gene Exchange Fraction Over Time",
+        "ylabel": "Fraction",
+        "output_name": "gene_exchange_fraction.png",
+        "aggregate_output_name": "gene_exchange_fraction_mean_std.png",
+        "fixed_ylim": (0.0, 0.5),
     },
 ]
 
@@ -491,29 +501,52 @@ def plot_behavior_trait_std(df: pd.DataFrame, output_path: str) -> None:
     plt.savefig(output_path, dpi=150)
     plt.close()
 
-def plot_gene_exchange_trait_std(
-    df: pd.DataFrame,
-    output_path: str | Path,
-) -> None:
-    """遺伝子交換形質の個体群内標準偏差を描画する。"""
+def plot_gene_exchange_probability_std(
+    df,
+    output_path,
+):
+    plt.figure(figsize=(10, 6))
 
-    plot_single_metrics(
-        df,
-        output_path,
-        [
-            (
-                "std_gene_exchange_probability",
-                "Gene Exchange Probability",
-            ),
-            (
-                "std_gene_exchange_fraction",
-                "Gene Exchange Fraction",
-            ),
-        ],
-        "Standard Deviation of Gene Exchange Traits Over Time",
-        "Standard Deviation",
-        fixed_ylim=(0.0, 0.5),
+    plt.plot(
+        df["step"],
+        df["std_gene_exchange_probability"],
+        label="Gene Exchange Probability Std",
     )
+
+    plt.title(
+        "Gene Exchange Probability Standard Deviation Over Time"
+    )
+    plt.xlabel("Step")
+    plt.ylabel("Standard Deviation")
+    plt.ylim(0.0, 0.5)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(output_path)
+    plt.close()
+
+
+def plot_gene_exchange_fraction_std(
+    df,
+    output_path,
+):
+    plt.figure(figsize=(10, 6))
+
+    plt.plot(
+        df["step"],
+        df["std_gene_exchange_fraction"],
+        label="Gene Exchange Fraction Std",
+    )
+
+    plt.title(
+        "Gene Exchange Fraction Standard Deviation Over Time"
+    )
+    plt.xlabel("Step")
+    plt.ylabel("Standard Deviation")
+    plt.ylim(0.0, 0.25)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(output_path)
+    plt.close()
 
 def plot_movement_and_eating_rates(df: pd.DataFrame, output_path: str) -> None:
     """Compatibility wrapper for the movement/eating plot."""
@@ -789,7 +822,8 @@ def save_all_single_run_plots(
             )
 
     plot_behavior_trait_std(df, str(output_dir / "behavior_trait_std.png"))
-    plot_gene_exchange_trait_std(df, output_dir / "gene_exchange_trait_std.png",)
+    plot_gene_exchange_probability_std(df,output_dir / "gene_exchange_probability_std.png",)
+    plot_gene_exchange_fraction_std(df,output_dir / "gene_exchange_fraction_std.png",)
     plot_trait_range(
         df,
         str(output_dir / "exploration_tendency_range.png"),
