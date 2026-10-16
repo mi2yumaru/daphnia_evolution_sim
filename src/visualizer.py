@@ -375,55 +375,6 @@ def plot_single_metrics(
     plt.savefig(output_path, dpi=150)
     plt.close()
 
-
-def plot_population(df: pd.DataFrame, output_path: str) -> None:
-    """Compatibility wrapper for the population plot."""
-    plot_single_metrics(
-        df,
-        output_path,
-        [("population_size", "Population")],
-        "Population Over Time",
-        "Population Size",
-    )
-
-
-def plot_average_energy(df: pd.DataFrame, output_path: str) -> None:
-    """Compatibility wrapper for the average energy plot."""
-    plot_single_metrics(
-        df,
-        output_path,
-        [("average_energy", "Average Energy")],
-        "Average Energy Over Time",
-        "Average Energy",
-    )
-
-
-def plot_average_age(df: pd.DataFrame, output_path: str) -> None:
-    """Compatibility wrapper for the average age plot."""
-    plot_single_metrics(
-        df,
-        output_path,
-        [("average_age", "Average Age")],
-        "Average Age Over Time",
-        "Average Age",
-    )
-
-def plot_behavior_traits(df: pd.DataFrame, output_path: str) -> None:
-    """Compatibility wrapper for the behavior-traits average plot."""
-    plot_single_metrics(
-        df,
-        output_path,
-        [
-            ("average_exploration_tendency", "Exploration Tendency"),
-            ("average_site_fidelity", "Site Fidelity"),
-            ("average_risk_tolerance", "Risk Tolerance"),
-            ("average_reproduction_timing", "Reproduction Timing"),
-        ],
-        "Average Behavior Traits Over Time",
-        "Trait Value",
-        fixed_ylim=(0.0, 1.0),
-    )
-
 def plot_trait_range(
     df: pd.DataFrame,
     output_path: str,
@@ -569,27 +520,6 @@ def plot_gene_exchange_fraction_std(
     plt.tight_layout()
     plt.savefig(output_path)
     plt.close()
-
-def plot_movement_and_eating_rates(df: pd.DataFrame, output_path: str) -> None:
-    """Compatibility wrapper for the movement/eating plot."""
-    total_eat_col = "total_eat_rate" if "total_eat_rate" in df.columns else "eat_rate"
-    metrics = [("move_rate", "Move Rate"), (total_eat_col, "Total Eat Rate")]
-    plot_single_metrics(df, output_path, metrics, "Movement and Eating Rates Over Time", "Rate")
-
-def plot_eating_breakdown_rates(df: pd.DataFrame, output_path: str) -> None:
-    """Compatibility wrapper for the eating-breakdown plot."""
-    plot_single_metrics(
-        df,
-        output_path,
-        [("eat_after_move_rate", "Eat Success After Move"), ("eat_without_move_rate", "Eat Success Without Move")],
-        "Eating Success Rates by Movement State",
-        "Rate",
-    )
-
-def plot_birth_death_rates(df: pd.DataFrame, output_path: str) -> None:
-    """Compatibility wrapper for the birth/death components plot."""
-    metrics = [("birth_rate", "Birth Rate"), ("age_death_rate", "Age Death Rate"), ("energy_death_rate", "Energy Death Rate")]
-    plot_single_metrics(df, output_path, metrics, "Birth and Death Rates Over Time", "Rate")
 
 def plot_food_dynamics(
     df: pd.DataFrame,

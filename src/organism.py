@@ -381,10 +381,6 @@ class Organism:
         effective_threshold = base_threshold * (1.0 + self.phenotype["reproduction_timing"])
         return self.energy >= effective_threshold
 
-    def get_effective_reproduction_threshold(self, base_threshold: float) -> float:
-        """実際に必要な繁殖エネルギー閾値を返す"""
-        return base_threshold * (1.0 + self.phenotype["reproduction_timing"])
-    
     def reproduce(
         self,
         width: int,
@@ -547,23 +543,6 @@ class Organism:
             return "age"
 
         return None
-
-    def is_dead(self, max_age: int) -> bool:
-        """
-        個体が死亡しているか判定
-        
-        エネルギーが0以下、または最大年齢に達したら死亡
-        
-        Args:
-            max_age: 個体の最大年齢
-        
-        Returns:
-            bool: 死亡していればTrue
-
-        個体固有の lifespan が設定されている場合はそれを使用し、
-        未設定の場合は従来の max_age を使用する。
-        """
-        return self.death_cause(max_age) is not None
     
     def age_one_step(self) -> None:
         """年齢を1増やす"""
