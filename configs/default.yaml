@@ -119,3 +119,9 @@ visualization:
   animation_path: "results/simulation.gif"
   save_video: false
   video_path: "results/simulation.mp4"
+# STEP1_AUTO_OUTCOMES_V1: 生存・繁殖成績の自動集計
+analysis:
+  offspring_outcomes:
+    enabled: true
+    horizon_steps: 200  # 比較前に固定する観察期間（ステップ）
+    save_individual: false  # trueなら個体別の大きなCSVも保存

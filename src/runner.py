@@ -17,6 +17,12 @@ except ImportError:
     from live_visualizer import run_live_visualization
     from visualizer import save_all_single_run_plots
 
+# STEP1_AUTO_OUTCOMES_V1: import
+try:
+    from src.analyze_offspring_outcomes import analyze_lineage_dataframe
+except ImportError:
+    from analyze_offspring_outcomes import analyze_lineage_dataframe
+
 def resolve_total_steps(config: dict[str, Any]) -> int:
     """
     simulation設定から総実行ステップ数を決定する。
@@ -406,6 +412,24 @@ def run_single_simulation(
             output_dir / "lineage.csv",
             index=False,
         )
+
+        # STEP1_AUTO_OUTCOMES_V1: 出生時の遺伝子交換別の生存・繁殖成績
+        analysis_settings = run_config.get("analysis", {}).get("offspring_outcomes", {})
+        if analysis_settings.get("enabled", True):
+            outcome_horizon = int(analysis_settings.get("horizon_steps", 200))
+            outcome_individual, outcome_summary = analyze_lineage_dataframe(
+                lineage_df,
+                last_logged_step=int(df["step"].iloc[-1]),
+                horizon_steps=outcome_horizon,
+            )
+            outcome_summary.to_csv(
+                output_dir / "offspring_outcomes_by_group.csv", index=False
+            )
+            if analysis_settings.get("save_individual", False):
+                outcome_individual.to_csv(
+                    output_dir / "offspring_outcomes_individual.csv", index=False
+                )
+            print(f"生存・繁殖成績の自動集計完了: {output_dir}")
 
         # Founder系統×行動戦略summary
         if not lineage_df.empty:

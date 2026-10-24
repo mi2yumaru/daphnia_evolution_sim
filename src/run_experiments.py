@@ -27,6 +27,12 @@ except ImportError:
         plot_food_respawn_rate,
     )
 
+# STEP1_AUTO_OUTCOMES_V1: import
+try:
+    from src.analyze_offspring_outcomes import aggregate_experiment_outcomes
+except ImportError:
+    from analyze_offspring_outcomes import aggregate_experiment_outcomes
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="複数seedでシミュレーションを反復実行します。"
@@ -299,6 +305,16 @@ def main() -> None:
     )
 
     # --------------------------------
+    # STEP1_AUTO_OUTCOMES_V1: seed間の追加集計
+    analysis_settings = config.get("analysis", {}).get("offspring_outcomes", {})
+    if analysis_settings.get("enabled", True):
+        aggregate_experiment_outcomes(
+            experiment_dir=experiment_dir,
+            seeds=args.seeds,
+            horizon_steps=int(analysis_settings.get("horizon_steps", 200)),
+        )
+        print("生存・繁殖成績のseed間集計完了")
+
     # 全seedのFounder系統summaryを結合
     # --------------------------------
     if not all_lineage_summaries:raise RuntimeError("系譜summaryがありません。")
