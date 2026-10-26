@@ -9,6 +9,12 @@ from collections import defaultdict, Counter
 from pathlib import Path
 import csv
 import numpy as np
+
+# STEP2_GENETIC_DIVERSITY_V1: 遺伝的多様性の算出
+try:
+    from .genetic_diversity import calculate_genetic_diversity
+except ImportError:
+    from genetic_diversity import calculate_genetic_diversity
 try:
     from .organism import Organism
     from .environment import Environment
@@ -1179,6 +1185,9 @@ class Simulation:
             min_gene_exchange_fraction = 0.0
             max_gene_exchange_fraction = 0.0
 
+        # STEP2_GENETIC_DIVERSITY_V1: 遺伝的多様性はstep末の生存集団を対象に計算
+        diversity_metrics = calculate_genetic_diversity(self.organisms)
+
         # 系譜統計を計算
         if population_size > 0:
             lineage_counts = Counter(
@@ -1288,6 +1297,7 @@ class Simulation:
             std_gene_exchange_fraction=std_gene_exchange_fraction,
             min_gene_exchange_fraction=min_gene_exchange_fraction,
             max_gene_exchange_fraction=max_gene_exchange_fraction,
+            **diversity_metrics,
             active_lineage_count=active_lineage_count,
             largest_lineage_share=largest_lineage_share,
             average_generation=average_generation,

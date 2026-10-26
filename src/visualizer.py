@@ -253,6 +253,32 @@ COMMON_PLOT_SPECS = [
         "aggregate_output_name": "gene_exchange_fraction_mean_std.png",
         "fixed_ylim": (0.0, 0.5),
     },
+    # STEP2_GENETIC_DIVERSITY_V1
+    {
+        "name": "genetic_diversity",
+        "metrics": [
+            ("genetic_diversity_all", "All 120 loci"),
+            ("genetic_diversity_behavior", "Behavior 80 loci"),
+            ("genetic_diversity_exchange", "Exchange 40 loci"),
+        ],
+        "title": "Within-Population Genetic Diversity (2p(1-p))",
+        "ylabel": "Mean locus diversity",
+        "output_name": "genetic_diversity.png",
+        "aggregate_output_name": "genetic_diversity_mean_std.png",
+        "fixed_ylim": (0.0, 0.5),
+    },
+    {
+        "name": "genotype_diversity",
+        "metrics": [
+            ("genotype_diversity", "Genotype Simpson diversity"),
+            ("unique_genotype_ratio", "Unique genotype ratio"),
+        ],
+        "title": "Whole-Genome Genotype Diversity",
+        "ylabel": "Diversity / Ratio",
+        "output_name": "genotype_diversity.png",
+        "aggregate_output_name": "genotype_diversity_mean_std.png",
+        "fixed_ylim": (0.0, 1.0),
+    },
 ]
 
 

@@ -99,6 +99,9 @@ def create_summary(all_logs: list[pd.DataFrame]) -> pd.DataFrame:
         tail_size = min(100, len(df))
         tail = df.tail(tail_size)
 
+        # STEP2_GENETIC_DIVERSITY_V1: 最終の暦年を1単位として集計
+        last_year = df.loc[df["simulation_year"] == df["simulation_year"].iloc[-1]]
+
         rows.append({
             "seed": seed,
             "final_population": df["population_size"].iloc[-1],
@@ -148,6 +151,22 @@ def create_summary(all_logs: list[pd.DataFrame]) -> pd.DataFrame:
                 df["average_risk_tolerance"].iloc[-1],
             "final_reproduction_timing":
                 df["average_reproduction_timing"].iloc[-1],
+        # STEP2_GENETIC_DIVERSITY_V1
+            "final_genetic_diversity_all": df["genetic_diversity_all"].iloc[-1],
+            "mean_genetic_diversity_all_last_100": tail["genetic_diversity_all"].mean(),
+            "mean_genetic_diversity_all_last_year": last_year["genetic_diversity_all"].mean(),
+            "final_genetic_diversity_behavior": df["genetic_diversity_behavior"].iloc[-1],
+            "mean_genetic_diversity_behavior_last_100": tail["genetic_diversity_behavior"].mean(),
+            "mean_genetic_diversity_behavior_last_year": last_year["genetic_diversity_behavior"].mean(),
+            "final_genetic_diversity_exchange": df["genetic_diversity_exchange"].iloc[-1],
+            "mean_genetic_diversity_exchange_last_100": tail["genetic_diversity_exchange"].mean(),
+            "mean_genetic_diversity_exchange_last_year": last_year["genetic_diversity_exchange"].mean(),
+            "final_genotype_diversity": df["genotype_diversity"].iloc[-1],
+            "mean_genotype_diversity_last_100": tail["genotype_diversity"].mean(),
+            "mean_genotype_diversity_last_year": last_year["genotype_diversity"].mean(),
+            "final_unique_genotype_ratio": df["unique_genotype_ratio"].iloc[-1],
+            "mean_unique_genotype_ratio_last_100": tail["unique_genotype_ratio"].mean(),
+            "mean_unique_genotype_ratio_last_year": last_year["unique_genotype_ratio"].mean(),
             "final_gene_exchange_probability":
                 df["average_gene_exchange_probability"].iloc[-1],
             "final_gene_exchange_fraction":
