@@ -1,0 +1,127 @@
+simulation:
+  # 実行期間の指定方法
+  # "steps": stepsで直接指定
+  # "years": duration_yearsから総ステップ数を自動計算
+  duration_mode: "years"
+
+  # duration_modeが"steps"のときに使用
+  steps: 100
+  # duration_modeが"years"のときに使用
+  duration_years: 3
+  days_per_year: 365
+  steps_per_day: 10
+
+  random_seed: 42
+  output_csv: "results/log.csv"
+  population_plot: "results/population.png"
+  energy_plot: "results/average_energy.png"
+  average_age_plot: "results/average_age.png"
+  birth_count_plot: "results/birth_count.png"
+  death_count_plot: "results/death_count.png"
+  behavior_traits_plot: "results/behavior_traits.png"
+  move_rate_plot: "results/move_rate.png"
+  eat_rate_plot: "results/eat_rate.png"
+  behavior_trait_std_plot: "results/behavior_trait_std.png"
+  movement_and_eating_rates_plot: "results/movement_and_eating_rates.png"
+  eat_per_move_plot: "results/eat_per_move.png"
+  birth_death_rates_plot: "results/birth_death_rates.png"
+
+environment:
+  width: 100
+  height: 100
+  mode: "random"            # 食料再生成モード: "random" または "patch"
+  patch_count: 9
+  patch_layout: "spread"    # "random" | "radial" | "spread"
+  patch_radius: 5
+  patch_density: 0.8
+  outside_respawn_fraction: 0.05  # パッチ外での低確率リポップ割合（patch モード時）
+  patch_radial_fraction: 0.25    # 'radial' レイアウト時の中心円の半径割合（短辺に対する比率）
+  patch_spread_use_corners: false # 'spread' レイアウトで角(0,0),(0,H),(W,0),(W,H)を距離計算に含めるか
+  patch_spread_step: 0          # spread レイアウトでの探索候補間隔(0=自動)
+  initial_food_count: 500
+  # seasonal_food.enabled=false のときに使用
+  food_respawn_rate: 0.02
+  food_energy: 5
+
+seasonal_food:
+  # true:
+  #   霞ヶ浦の一次生産量に基づく365日周期で餌再生成率を変化
+  # false:
+  #   environment.food_respawn_rate の固定値を使用
+  enabled: true
+
+  csv_path: "data/kasumigaura_sta9_food_respawn_365_mean002.csv"
+
+behavior:
+  low_energy_threshold_ratio: 0.5
+  food_detection_range: 1
+  site_memory_steps: 20
+
+  # 自分のいるマスに餌があるとき、移動しない候補に加える重み
+  current_cell_food_weight: 8.0
+
+  # 周囲方向に餌があるとき、その方向に加える重み
+  nearby_food_weight: 4.0
+
+  # 最後に餌を食べた場所へ近づく方向に加える重み
+  site_memory_weight: 2.0
+
+organism:
+  initial_population: 100
+  initial_energy: 10
+  move_cost: 0.5
+  living_cost: 0.3
+  reproduction_threshold: 20
+  reproduction_cost: 10
+  offspring_energy: 5
+
+  # 初期個体の年齢を 0 ～ max_age-1 の範囲でランダム化するか
+  randomize_initial_age: false
+
+  # 個体ごとに寿命をランダム化するか
+  randomize_lifespan: true
+
+  # randomize_lifespan=true の場合の寿命範囲
+  lifespan_min: 150
+  lifespan_max: 250
+
+  # randomize_lifespan=false の場合に使用する固定寿命
+  max_age: 200
+
+  move_type: "moore"  # moore(8) or von_neumann(4)
+
+genetics:
+  # 現在は 6形質 × 20 loci = 120 loci
+  genome_length: 120
+  mutation_rate: 0.002
+
+gene_exchange:
+  enabled: true
+  # "fixed": probability / fraction の固定値を全個体で使用
+  # "evolvable": 個体の genome にコードされた値を使用
+  mode: "evolvable"
+  # mode="fixed" のときに使用
+  # 遺伝子交換確率
+  probability: 1.00
+  # 遺伝子交換割合
+  fraction: 0.50
+
+environment_change:
+  enabled: false
+  period: 200
+
+visualization:
+  enabled: true
+  interval_ms: 100
+  show_food: true
+  show_organisms: true
+  save_animation: false
+  animation_path: "results/simulation.gif"
+  save_video: false
+  video_path: "results/simulation.mp4"
+# STEP1_AUTO_OUTCOMES_V1: 生存・繁殖成績の自動集計
+analysis:
+  offspring_outcomes:
+    enabled: true
+    horizon_steps: 200  # 比較前に固定する観察期間（ステップ）
+    save_individual: false  # trueなら個体別の大きなCSVも保存

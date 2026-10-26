@@ -125,3 +125,7 @@ analysis:
     enabled: true
     horizon_steps: 200  # 比較前に固定する観察期間（ステップ）
     save_individual: false  # trueなら個体別の大きなCSVも保存
+  # STEP3_GENE_FLOW_V1: 系譜・遺伝子提供関係の集計
+  gene_flow:
+    enabled: true
+    window_steps: 100  # 一定期間ごとの遺伝子交換・提供関係の推移

@@ -23,6 +23,12 @@ try:
 except ImportError:
     from analyze_offspring_outcomes import analyze_lineage_dataframe
 
+# STEP3_GENE_FLOW_V1: import
+try:
+    from src.analyze_gene_flow import save_gene_flow_seed
+except ImportError:
+    from analyze_gene_flow import save_gene_flow_seed
+
 def resolve_total_steps(config: dict[str, Any]) -> int:
     """
     simulation設定から総実行ステップ数を決定する。
@@ -412,6 +418,17 @@ def run_single_simulation(
             output_dir / "lineage.csv",
             index=False,
         )
+
+        # STEP3_GENE_FLOW_V1: 既存lineageから提供者・Founder系譜間の遺伝子移動を集計
+        flow_settings = run_config.get("analysis", {}).get("gene_flow", {})
+        if flow_settings.get("enabled", True):
+            save_gene_flow_seed(
+                lineage_df, output_dir,
+                last_logged_step=int(df["step"].iloc[-1]),
+                window_steps=int(flow_settings.get("window_steps", 100)),
+                save_plots=save_plots,
+            )
+            print(f"遺伝子提供・Founder系譜間の集計完了: {output_dir}")
 
         # STEP1_AUTO_OUTCOMES_V1: 出生時の遺伝子交換別の生存・繁殖成績
         analysis_settings = run_config.get("analysis", {}).get("offspring_outcomes", {})

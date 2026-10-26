@@ -33,6 +33,12 @@ try:
 except ImportError:
     from analyze_offspring_outcomes import aggregate_experiment_outcomes
 
+# STEP3_GENE_FLOW_V1: import
+try:
+    from src.analyze_gene_flow import aggregate_gene_flow_experiment
+except ImportError:
+    from analyze_gene_flow import aggregate_gene_flow_experiment
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="複数seedでシミュレーションを反復実行します。"
@@ -333,6 +339,12 @@ def main() -> None:
             horizon_steps=int(analysis_settings.get("horizon_steps", 200)),
         )
         print("生存・繁殖成績のseed間集計完了")
+
+    # STEP3_GENE_FLOW_V1: seed間の提供関係・交差Founder遺伝子移動を集計
+    flow_settings = config.get("analysis", {}).get("gene_flow", {})
+    if flow_settings.get("enabled", True):
+        aggregate_gene_flow_experiment(experiment_dir, args.seeds)
+        print("遺伝子提供・Founder系譜間のseed間集計完了")
 
     # 全seedのFounder系統summaryを結合
     # --------------------------------
