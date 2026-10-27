@@ -39,6 +39,12 @@ try:
 except ImportError:
     from analyze_gene_flow import aggregate_gene_flow_experiment
 
+# STEP4_LAST_YEAR_V1: shared final-year statistics (no simulation changes)
+try:
+    from src.last_year_summary import calculate_last_year_metrics, across_seed_summary, META_COLUMNS, METRIC_COLUMNS
+except ImportError:
+    from last_year_summary import calculate_last_year_metrics, across_seed_summary, META_COLUMNS, METRIC_COLUMNS
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="複数seedでシミュレーションを反復実行します。"
@@ -94,7 +100,7 @@ def aggregate_runs(all_logs: list[pd.DataFrame]) -> pd.DataFrame:
 
     return aggregate
 
-def create_summary(all_logs: list[pd.DataFrame]) -> pd.DataFrame:
+def create_summary(all_logs: list[pd.DataFrame], steps_per_year: int = 3650) -> pd.DataFrame:
     """
     seedごとの最終値と後半100step平均を作成する。
     """
@@ -246,6 +252,16 @@ def create_summary(all_logs: list[pd.DataFrame]) -> pd.DataFrame:
         how="left",
     )
 
+    # STEP4_LAST_YEAR_V1: final complete calendar year per seed.
+    # Drop existing STEP2-only year columns before inserting consistently.
+    final_year_rows = [
+        {"seed": int(df["seed"].iloc[0]), **calculate_last_year_metrics(df, steps_per_year)}
+        for df in all_logs
+    ]
+    new_year = pd.DataFrame(final_year_rows)
+    duplicated_columns = [c for c in (*META_COLUMNS, *METRIC_COLUMNS) if c in summary_df.columns]
+    summary_df = summary_df.drop(columns=duplicated_columns).merge(new_year, on="seed", how="left", validate="one_to_one")
+
     return summary_df
 
 def main() -> None:
@@ -323,10 +339,17 @@ def main() -> None:
         index=False
     )
 
-    summary_df = create_summary(all_logs)
+    # STEP4_LAST_YEAR_V1: use the configured year length.
+    sim_config = config["simulation"]
+    steps_per_year = int(sim_config["days_per_year"]) * int(sim_config["steps_per_day"])
+    summary_df = create_summary(all_logs, steps_per_year=steps_per_year)
     summary_df.to_csv(
         experiment_dir / "summary.csv",
         index=False
+    )
+    across_seed_summary(summary_df).to_csv(
+        experiment_dir / "summary_last_year_across_seeds.csv",
+        index=False,
     )
 
     # --------------------------------
