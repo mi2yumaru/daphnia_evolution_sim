@@ -4,6 +4,8 @@ main.py - 単一seedシミュレーションの実行エントリーポイント
 指定した乱数seedでシミュレーションを1回実行する。
 ライブ可視化、CSV保存、静的グラフ保存をオプションで切り替えられる。
 """
+import matplotlib
+matplotlib.use("TkAgg")  # 必ずpyplotの読み込みより前に指定
 
 import argparse
 from pathlib import Path
