@@ -666,6 +666,9 @@ class Simulation:
         org_config = self.config["organism"]
         env_config = self.config["environment"]
         gen_config = self.config["genetics"]
+
+        # FOOD_FLOW_LOGGING_V1: passive counters, reset once per step.
+        self.environment.reset_food_flow_counters()
         
         # -------------------------
         # 現在の年・日・餌再生成率
@@ -1056,6 +1059,12 @@ class Simulation:
         # 9. 統計情報をログに記録する
         population_size = len(self.organisms)
         food_count = self.environment.food_count()
+        food_flow_metrics = self.environment.get_food_flow_metrics()
+        if self.environment.respawn_mode == "patch" and food_flow_metrics["patch_area"] is not None:
+            if (food_flow_metrics["food_respawn_in"] + food_flow_metrics["food_respawn_out"] != food_respawn_count
+                    or food_flow_metrics["food_consumed_in"] + food_flow_metrics["food_consumed_out"] != food_consumed_count
+                    or food_flow_metrics["food_in"] + food_flow_metrics["food_out"] != food_count):
+                raise AssertionError("Patch food-flow counts do not match the existing totals")
 
         move_rate = move_count / population_before if population_before > 0 else 0.0
 
@@ -1298,6 +1307,7 @@ class Simulation:
             min_gene_exchange_fraction=min_gene_exchange_fraction,
             max_gene_exchange_fraction=max_gene_exchange_fraction,
             **diversity_metrics,
+            **food_flow_metrics,
             active_lineage_count=active_lineage_count,
             largest_lineage_share=largest_lineage_share,
             average_generation=average_generation,

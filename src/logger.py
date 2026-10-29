@@ -99,6 +99,20 @@ class SimulationLogger:
         largest_lineage_share: float,
         average_generation: float,
         max_generation: int,
+        # FOOD_FLOW_LOGGING_V1: optional for backward compatibility with old tests
+        patch_area: int | None = None,
+        outside_area: int | None = None,
+        food_in: int | None = None,
+        food_out: int | None = None,
+        food_respawn_in: int | None = None,
+        food_respawn_out: int | None = None,
+        food_consumed_in: int | None = None,
+        food_consumed_out: int | None = None,
+        density_in: float | None = None,
+        density_out: float | None = None,
+        density_ratio: float | None = None,
+        density_pre_in: float | None = None,
+        density_pre_out: float | None = None,
     ) -> None:
         """
         1ステップ分のデータを記録
@@ -252,6 +266,19 @@ class SimulationLogger:
             "largest_lineage_share": largest_lineage_share,
             "average_generation": average_generation,
             "max_generation": max_generation,
+            "patch_area": patch_area,
+            "outside_area": outside_area,
+            "food_in": food_in,
+            "food_out": food_out,
+            "food_respawn_in": food_respawn_in,
+            "food_respawn_out": food_respawn_out,
+            "food_consumed_in": food_consumed_in,
+            "food_consumed_out": food_consumed_out,
+            "density_in": density_in,
+            "density_out": density_out,
+            "density_ratio": density_ratio,
+            "density_pre_in": density_pre_in,
+            "density_pre_out": density_pre_out,
         })
     
     def to_dataframe(self) -> pd.DataFrame:

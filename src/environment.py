@@ -46,6 +46,10 @@ class Environment:
 
         self.patch_centers: List[Tuple[int, int]] = []
 
+        # FOOD_FLOW_LOGGING_V1: passive observation only; no random draws.
+        self._food_flow_patch_cells: Optional[Set[Tuple[int, int]]] = None
+        self.reset_food_flow_counters()
+
     def init_food(self, initial_count: int) -> None:
         if initial_count <= 0:
             return
@@ -53,6 +57,7 @@ class Environment:
         if self.respawn_mode == "patch":
             self._init_patch_regions()
             patch_cells = self._get_patch_cells()
+            self._food_flow_patch_cells = set(patch_cells)
             empty_patch = [p for p in patch_cells if p not in self.food]
             if empty_patch:
                 place = min(initial_count, len(empty_patch))
@@ -65,7 +70,7 @@ class Environment:
 
         self._add_random_food(initial_count)
 
-    def _add_random_food(self, count: int) -> None:
+    def _add_random_food(self, count: int, *, track_food_flow: bool = False) -> None:
         if count <= 0:
             return
         empty = [(x, y) for x in range(self.width) for y in range(self.height) if (x, y) not in self.food]
@@ -74,7 +79,15 @@ class Environment:
         k = min(count, len(empty))
         idx = np.random.choice(len(empty), size=k, replace=False)
         for i in idx:
-            self.food.add(empty[int(i)])
+            pos = empty[int(i)]
+            self.food.add(pos)
+            if track_food_flow:
+                if self._food_flow_patch_cells is None:
+                    raise RuntimeError("Missing cached patch cells for food-flow tracking")
+                if pos in self._food_flow_patch_cells:
+                    self._food_flow_respawn_in += 1
+                else:
+                    self._food_flow_respawn_out += 1
 
     def _init_patch_regions(self) -> None:
         if self.patch_centers:
@@ -171,7 +184,16 @@ class Environment:
         return (x, y) in self.food
 
     def remove_food(self, x: int, y: int) -> None:
-        self.food.discard((x, y))
+        # Count only an actual deletion, once per food cell (not per consumer).
+        pos = (x, y)
+        if self.respawn_mode == "patch" and pos in self.food:
+            if self._food_flow_patch_cells is None:
+                raise RuntimeError("Missing cached patch cells for food-flow tracking")
+            if pos in self._food_flow_patch_cells:
+                self._food_flow_consumed_in += 1
+            else:
+                self._food_flow_consumed_out += 1
+        self.food.discard(pos)
 
     def respawn_food(self, rate: float) -> int:
         before_count = len(self.food)
@@ -186,6 +208,8 @@ class Environment:
         if self.respawn_mode == "patch":
             self._init_patch_regions()
             patch_cells = self._get_patch_cells()
+            if self._food_flow_patch_cells is None:
+                self._food_flow_patch_cells = set(patch_cells)
             empty_patch = [p for p in patch_cells if p not in self.food]
 
             outside_frac = max(0.0, min(1.0, self.outside_respawn_fraction))
@@ -200,6 +224,7 @@ class Environment:
                 for i in chosen:
                     self.food.add(empty_patch[int(i)])
                 added += add_patch
+                self._food_flow_respawn_in += add_patch
 
             if outside_target > 0:
                 empty_outside = [
@@ -214,14 +239,71 @@ class Environment:
                     for i in chosen_out:
                         self.food.add(empty_outside[int(i)])
                     added += add_out
+                    self._food_flow_respawn_out += add_out
 
             if added < to_add:
-                self._add_random_food(to_add - added)
+                self._add_random_food(to_add - added, track_food_flow=True)
             return len(self.food) - before_count
 
         # random mode
         self._add_random_food(to_add)
         return len(self.food) - before_count
+
+    def reset_food_flow_counters(self) -> None:
+        """Reset measured counts once at the start of each simulation step."""
+        self._food_flow_respawn_in = 0
+        self._food_flow_respawn_out = 0
+        self._food_flow_consumed_in = 0
+        self._food_flow_consumed_out = 0
+
+    def get_food_flow_metrics(self) -> dict:
+        """Observed patch food flow and pre/post-consumption food availability.
+
+        The pre-consumption count is reconstructed as post-count + consumed.
+        No RNG calls; the food set is read without mutation.
+        Patch metrics are undefined (None/NaN in CSV) for random mode.
+        """
+        if self.respawn_mode != "patch":
+            return {key: None for key in (
+                "patch_area", "outside_area", "food_in", "food_out",
+                "food_respawn_in", "food_respawn_out",
+                "food_consumed_in", "food_consumed_out",
+                "density_in", "density_out", "density_ratio",
+                "density_pre_in", "density_pre_out",
+            )}
+        patch_cells = self._food_flow_patch_cells
+        if patch_cells is None:
+            # With zero initial food, region geometry may not exist yet.
+            return {key: None for key in (
+                "patch_area", "outside_area", "food_in", "food_out",
+                "food_respawn_in", "food_respawn_out",
+                "food_consumed_in", "food_consumed_out",
+                "density_in", "density_out", "density_ratio",
+                "density_pre_in", "density_pre_out",
+            )}
+        patch_area = len(patch_cells)
+        outside_area = self.width * self.height - patch_area
+        if patch_area <= 0 or outside_area <= 0:
+            raise ValueError("Patch flow requires nonempty in/out regions")
+        food_in = sum(pos in patch_cells for pos in self.food)
+        food_out = len(self.food) - food_in
+        density_in = food_in / patch_area
+        density_out = food_out / outside_area
+        return {
+            "patch_area": patch_area,
+            "outside_area": outside_area,
+            "food_in": food_in,
+            "food_out": food_out,
+            "food_respawn_in": self._food_flow_respawn_in,
+            "food_respawn_out": self._food_flow_respawn_out,
+            "food_consumed_in": self._food_flow_consumed_in,
+            "food_consumed_out": self._food_flow_consumed_out,
+            "density_in": density_in,
+            "density_out": density_out,
+            "density_ratio": density_in / density_out if density_out else float("nan"),
+            "density_pre_in": (food_in + self._food_flow_consumed_in) / patch_area,
+            "density_pre_out": (food_out + self._food_flow_consumed_out) / outside_area,
+        }
 
     def food_count(self) -> int:
         return len(self.food)
