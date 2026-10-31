@@ -79,6 +79,10 @@ behavior:
 
 organism:
   initial_population: 100
+  # STEP3_CONTROLLED_INITIAL_PLACEMENT_V1
+  initial_placement_mode: "uniform"  # uniform / inside / near / far
+  initial_placement_near_max_distance: 3.0  # outside patch; 0 < distance <= 3
+  initial_placement_far_min_distance: 15.0  # outside patch; distance >= 15
   initial_energy: 10
   move_cost: 0.5
   living_cost: 0.3

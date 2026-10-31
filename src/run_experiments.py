@@ -71,6 +71,13 @@ def parse_args() -> argparse.Namespace:
         help="実験結果ディレクトリ名"
     )
 
+    # STEP3_CONTROLLED_INITIAL_PLACEMENT_V1
+    parser.add_argument(
+        "--initial-placement",
+        choices=("uniform", "inside", "near", "far"),
+        default=None,
+        help="Founder initial placement (overrides organism.initial_placement_mode)",
+    )
     return parser.parse_args()
 
 def aggregate_runs(all_logs: list[pd.DataFrame]) -> pd.DataFrame:
@@ -273,6 +280,9 @@ def main() -> None:
     with open(config_path, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)
 
+    if args.initial_placement is not None:
+        config["organism"]["initial_placement_mode"] = args.initial_placement
+
     experiment_dir = (
         project_root
         / "results"
@@ -280,6 +290,17 @@ def main() -> None:
         / args.experiment_name
     )
     experiment_dir.mkdir(parents=True, exist_ok=True)
+
+    # Preserve the exact config for spatial classification later.
+    config_snapshot_path = experiment_dir / "config_used.yaml"
+    if config_snapshot_path.exists():
+        with config_snapshot_path.open(encoding="utf-8") as f:
+            previous_config = yaml.safe_load(f)
+        if previous_config != config:
+            raise ValueError("Experiment directory contains a different config_used.yaml; choose a new --experiment-name")
+    else:
+        with config_snapshot_path.open("w", encoding="utf-8") as f:
+            yaml.safe_dump(config, f, allow_unicode=True, sort_keys=False)
 
     all_logs: list[pd.DataFrame] = []
     all_lineage_summaries: list[pd.DataFrame] = []

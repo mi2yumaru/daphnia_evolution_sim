@@ -10,6 +10,12 @@ from pathlib import Path
 import csv
 import numpy as np
 
+# STEP3_CONTROLLED_INITIAL_PLACEMENT_V1
+try:
+    from .initial_placement import initial_placement_candidates
+except ImportError:
+    from initial_placement import initial_placement_candidates
+
 # STEP2_GENETIC_DIVERSITY_V1: 遺伝的多様性の算出
 try:
     from .genetic_diversity import calculate_genetic_diversity
@@ -273,11 +279,48 @@ class Simulation:
         # 死亡して self.organisms から削除された後も記録を保持する
         self.lineage_records: Dict[int, Dict[str, Any]] = {}
 
+        # STEP3: Controlled Founder positions.  Original uniform option is unchanged.
+        initial_placement_mode = str(org_config.get("initial_placement_mode", "uniform"))
+        if initial_placement_mode not in {"uniform", "inside", "near", "far"}:
+            raise ValueError(f"Unsupported initial_placement_mode: {initial_placement_mode}")
+        initial_placement_candidates_list = None
+        initial_placement_rng = None
+        if initial_placement_mode != "uniform":
+            if self.environment.respawn_mode != "patch":
+                raise ValueError("inside/near/far placement requires environment.mode='patch'")
+            patch_cells = set(self.environment._get_patch_cells())
+            initial_placement_candidates_list = initial_placement_candidates(
+                self.environment.width,
+                self.environment.height,
+                patch_cells,
+                initial_placement_mode,
+                near_max_distance=float(org_config.get(
+                    "initial_placement_near_max_distance", 3.0
+                )),
+                far_min_distance=float(org_config.get(
+                    "initial_placement_far_min_distance", 15.0
+                )),
+            )
+            if not initial_placement_candidates_list:
+                raise ValueError(
+                    f"No eligible cells for initial placement: {initial_placement_mode}"
+                )
+            # Separate RNG (stream 4): positions do not disturb genome/lifespan RNG.
+            initial_placement_rng = np.random.default_rng(
+                np.random.SeedSequence([int(sim_config["random_seed"]), 4])
+            )
+
         # 個体群の初期化
         self.organisms: List[Organism] = []
         for _ in range(org_config["initial_population"]):
             x = np.random.randint(0, env_config["width"])
             y = np.random.randint(0, env_config["height"])
+            # Keep these two original draws for paired-seed initial traits.
+            if initial_placement_candidates_list is not None:
+                index = int(initial_placement_rng.integers(
+                    len(initial_placement_candidates_list)
+                ))
+                x, y = initial_placement_candidates_list[index]
 
             # 個体固有の寿命を生成
             lifespan = self._sample_lifespan()
