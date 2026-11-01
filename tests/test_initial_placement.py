@@ -31,6 +31,15 @@ def test_founders_position_only_changes_with_same_seed():
     base["environment"]["mode"] = "patch"
     base["organism"]["randomize_initial_age"] = False
 
+    # STEP3のテスト用に9パッチ環境を固定
+    base["environment"]["patch_count"] = 9
+    base["environment"]["patch_radius"] = 5
+    base["environment"]["patch_centers"] = [
+        [x, y]
+        for x in (1, 49, 98)
+        for y in (1, 49, 98)
+    ]
+
     sims = {}
     for mode in ("uniform", "inside", "near", "far"):
         config = deepcopy(base)

@@ -32,7 +32,7 @@ class Organism:
     ]
 
     @classmethod
-    def _generate_random_genome(cls) -> np.ndarray:
+    def _generate_random_genome(cls, rng: Optional[np.random.Generator] = None) -> np.ndarray:
         """
         各形質について、1のlocus数を0〜LOCI_PER_TRAITから
         一様に選び、初期ゲノムを生成する。
@@ -41,9 +41,10 @@ class Organism:
 
         for _ in cls.TRAIT_LABELS:
             # 形質値の段階を0〜20から一様に選ぶ
-            ones_count = np.random.randint(
-                0,
-                cls.LOCI_PER_TRAIT + 1,
+            ones_count = (
+                int(rng.integers(0, cls.LOCI_PER_TRAIT + 1))
+                if rng is not None
+                else np.random.randint(0, cls.LOCI_PER_TRAIT + 1)
             )
 
             # 最初は全部0
@@ -54,7 +55,8 @@ class Organism:
 
             # ones_count個だけランダムな位置を1にする
             if ones_count > 0:
-                one_indices = np.random.choice(
+                choice_rng = rng if rng is not None else np.random
+                one_indices = choice_rng.choice(
                     cls.LOCI_PER_TRAIT,
                     size=ones_count,
                     replace=False,

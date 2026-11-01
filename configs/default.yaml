@@ -113,6 +113,7 @@ organism:
   initial_population: 100
   # STEP3_CONTROLLED_INITIAL_PLACEMENT_V1
   initial_placement_mode: "uniform"  # uniform / inside / near / far
+  paired_initialization: true  # STEP4: keep founder positions/genomes fixed across environments
   initial_placement_near_max_distance: 3.0  # outside patch; 0 < distance <= 3
   initial_placement_far_min_distance: 15.0  # outside patch; distance >= 15
   initial_energy: 10

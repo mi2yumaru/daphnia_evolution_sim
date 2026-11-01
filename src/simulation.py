@@ -279,6 +279,16 @@ class Simulation:
         # 死亡して self.organisms から削除された後も記録を保持する
         self.lineage_records: Dict[int, Dict[str, Any]] = {}
 
+        # STEP4_PAIRED_INITIALIZATION_V1: independent seeded founder streams.
+        # Legacy mode (False) reproduces the STEP3 initialization behavior.
+        paired_initialization = bool(org_config.get("paired_initialization", False))
+        founder_genome_rng = (
+            np.random.default_rng(
+                np.random.SeedSequence([int(sim_config["random_seed"]), 5])
+            )
+            if paired_initialization else None
+        )
+
         # STEP3: Controlled Founder positions.  Original uniform option is unchanged.
         initial_placement_mode = str(org_config.get("initial_placement_mode", "uniform"))
         if initial_placement_mode not in {"uniform", "inside", "near", "far"}:
@@ -310,12 +320,23 @@ class Simulation:
                 np.random.SeedSequence([int(sim_config["random_seed"]), 4])
             )
 
+        # For STEP4, uniform positions use a dedicated stream too, making
+        # founder coordinates identical even if initial food draws differ.
+        if paired_initialization and initial_placement_mode == "uniform":
+            initial_placement_rng = np.random.default_rng(
+                np.random.SeedSequence([int(sim_config["random_seed"]), 4])
+            )
+
         # 個体群の初期化
         self.organisms: List[Organism] = []
         for _ in range(org_config["initial_population"]):
-            x = np.random.randint(0, env_config["width"])
-            y = np.random.randint(0, env_config["height"])
-            # Keep these two original draws for paired-seed initial traits.
+            if paired_initialization and initial_placement_mode == "uniform":
+                x = int(initial_placement_rng.integers(0, env_config["width"]))
+                y = int(initial_placement_rng.integers(0, env_config["height"]))
+            else:
+                x = np.random.randint(0, env_config["width"])
+                y = np.random.randint(0, env_config["height"])
+            # STEP3 controlled modes still override positions below.
             if initial_placement_candidates_list is not None:
                 index = int(initial_placement_rng.integers(
                     len(initial_placement_candidates_list)
@@ -343,6 +364,11 @@ class Simulation:
                 y=y,
                 initial_energy=org_config["initial_energy"],
                 genome_length=gen_config["genome_length"],
+                # In STEP4, genetics are independent of food placement RNG.
+                genome=(
+                    Organism._generate_random_genome(founder_genome_rng)
+                    if paired_initialization else None
+                ),
                 initial_age=initial_age,
                 lifespan=lifespan,
 
