@@ -51,6 +51,13 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="Path to YAML config (relative to repo root, or absolute). Default: configs/default.yaml",
+    )
+
+    parser.add_argument(
         "--seeds",
         type=int,
         nargs="+",
@@ -275,7 +282,16 @@ def main() -> None:
     args = parse_args()
 
     project_root = Path(__file__).parent.parent
-    config_path = project_root / "configs" / "default.yaml"
+    # STEP4_CONFIG_SELECTION_V1: choose explicit config without editing default.yaml.
+    config_path = (
+        Path(args.config) if args.config is not None
+        else Path("configs/default.yaml")
+    )
+    if not config_path.is_absolute():
+        config_path = project_root / config_path
+    if not config_path.is_file():
+        raise FileNotFoundError(f"Config file not found: {config_path}")
+    print(f"Using config: {config_path}")
 
     with open(config_path, "r", encoding="utf-8") as f:
         config = yaml.safe_load(f)

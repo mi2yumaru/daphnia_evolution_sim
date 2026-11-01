@@ -1,0 +1,142 @@
+simulation:
+  duration_mode: years
+  steps: 100
+  duration_years: 3
+  days_per_year: 365
+  steps_per_day: 10
+  random_seed: 42
+  output_csv: results/log.csv
+  population_plot: results/population.png
+  energy_plot: results/average_energy.png
+  average_age_plot: results/average_age.png
+  birth_count_plot: results/birth_count.png
+  death_count_plot: results/death_count.png
+  behavior_traits_plot: results/behavior_traits.png
+  move_rate_plot: results/move_rate.png
+  eat_rate_plot: results/eat_rate.png
+  behavior_trait_std_plot: results/behavior_trait_std.png
+  movement_and_eating_rates_plot: results/movement_and_eating_rates.png
+  eat_per_move_plot: results/eat_per_move.png
+  birth_death_rates_plot: results/birth_death_rates.png
+environment:
+  width: 100
+  height: 100
+  mode: patch
+  patch_layout: spread
+  patch_count: 25
+  patch_radius: 2
+  patch_centers:
+  - - 2
+    - 2
+  - - 26
+    - 2
+  - - 49
+    - 2
+  - - 73
+    - 2
+  - - 97
+    - 2
+  - - 2
+    - 26
+  - - 26
+    - 26
+  - - 49
+    - 26
+  - - 73
+    - 26
+  - - 97
+    - 26
+  - - 2
+    - 49
+  - - 26
+    - 49
+  - - 49
+    - 49
+  - - 73
+    - 49
+  - - 97
+    - 49
+  - - 2
+    - 73
+  - - 26
+    - 73
+  - - 49
+    - 73
+  - - 73
+    - 73
+  - - 97
+    - 73
+  - - 2
+    - 97
+  - - 26
+    - 97
+  - - 49
+    - 97
+  - - 73
+    - 97
+  - - 97
+    - 97
+  patch_density: 0.8
+  outside_respawn_fraction: 0.05
+  patch_radial_fraction: 0.25
+  patch_spread_use_corners: false
+  patch_spread_step: 0
+  initial_food_count: 500
+  food_respawn_rate: 0.02
+  food_energy: 5
+seasonal_food:
+  enabled: true
+  csv_path: data/kasumigaura_sta9_food_respawn_365_mean002.csv
+behavior:
+  low_energy_threshold_ratio: 0.5
+  food_detection_range: 1
+  site_memory_steps: 20
+  current_cell_food_weight: 8.0
+  nearby_food_weight: 4.0
+  site_memory_weight: 2.0
+organism:
+  initial_population: 100
+  initial_placement_mode: uniform
+  paired_initialization: true
+  initial_placement_near_max_distance: 3.0
+  initial_placement_far_min_distance: 15.0
+  initial_energy: 10
+  move_cost: 0.5
+  living_cost: 0.3
+  reproduction_threshold: 20
+  reproduction_cost: 10
+  offspring_energy: 5
+  randomize_initial_age: false
+  randomize_lifespan: true
+  lifespan_min: 150
+  lifespan_max: 250
+  max_age: 200
+  move_type: moore
+genetics:
+  genome_length: 120
+  mutation_rate: 0.002
+gene_exchange:
+  enabled: true
+  mode: evolvable
+  probability: 1.0
+  fraction: 0.5
+environment_change:
+  enabled: false
+  period: 200
+visualization:
+  enabled: true
+  interval_ms: 100
+  show_food: true
+  show_organisms: true
+  save_animation: false
+  animation_path: results/simulation.gif
+  save_video: false
+  video_path: results/simulation.mp4
+analysis:
+  offspring_outcomes:
+    enabled: true
+    horizon_steps: 200
+    save_individual: false
+  gene_flow:
+    enabled: true
+    window_steps: 100
