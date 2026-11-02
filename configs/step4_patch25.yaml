@@ -1,7 +1,7 @@
 simulation:
   duration_mode: years
   steps: 100
-  duration_years: 3
+  duration_years: 5
   days_per_year: 365
   steps_per_day: 10
   random_seed: 42
