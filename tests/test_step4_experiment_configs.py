@@ -28,7 +28,7 @@ def test_configs_only_differ_spatially():
         assert conf["organism"]["paired_initialization"] is True
         assert conf["organism"]["initial_population"] == 100
         assert conf["environment"]["initial_food_count"] == 500
-        assert conf["simulation"]["duration_years"] == 3
+        assert conf["simulation"]["duration_years"] == 5
         assert conf["seasonal_food"]["enabled"] is True
     baseline = None
     for config in configs.values():

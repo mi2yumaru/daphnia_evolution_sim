@@ -797,6 +797,7 @@ class Simulation:
         # 同じ餌マスを複数個体が共有した回数を記録する
         shared_food_cell_count = 0
         shared_food_consumer_count = 0
+        shared_food_consumer_squared_sum = 0
 
         # 遺伝子交換に関するstep単位の統計
         gene_exchange_eligible_count = 0
@@ -882,6 +883,7 @@ class Simulation:
             if consumer_count > 1:
                 shared_food_cell_count += 1
                 shared_food_consumer_count += consumer_count
+                shared_food_consumer_squared_sum += consumer_count ** 2
 
             # 同じ餌マスにいる個体数で food_energy を等分
             shared_food_energy = env_config["food_energy"] / consumer_count
@@ -1170,6 +1172,17 @@ class Simulation:
             if shared_food_cell_count > 0
             else 0.0
         )
+        # Population SD across shared food cells (not across seeds).
+        # Zero shared food cells means the distribution is undefined.
+        std_consumers_per_shared_food = (
+            float(np.sqrt(max(
+                0.0,
+                shared_food_consumer_squared_sum / shared_food_cell_count
+                - mean_consumers_per_shared_food ** 2,
+            )))
+            if shared_food_cell_count > 0
+            else float("nan")
+        )
 
         # birth_rate / death_rate はステップ開始時の個体数に対する割合
         birth_rate = birth_count / population_before if population_before > 0 else 0.0
@@ -1186,8 +1199,16 @@ class Simulation:
         )
 
         if population_size > 0:
-            average_energy = sum(org.energy for org in self.organisms) / population_size
-            average_age = sum(org.age for org in self.organisms) / population_size
+            energy_values = np.fromiter(
+                (org.energy for org in self.organisms), dtype=float, count=population_size
+            )
+            age_values = np.fromiter(
+                (org.age for org in self.organisms), dtype=float, count=population_size
+            )
+            average_energy = float(np.mean(energy_values))
+            std_energy = float(np.std(energy_values, ddof=0))
+            average_age = float(np.mean(age_values))
+            std_age = float(np.std(age_values, ddof=0))
             
             exploration_values = [org.phenotype["exploration_tendency"] for org in self.organisms]
             site_fidelity_values = [org.phenotype["site_fidelity"] for org in self.organisms]
@@ -1230,7 +1251,9 @@ class Simulation:
         
         else:
             average_energy = 0.0
+            std_energy = 0.0
             average_age = 0.0
+            std_age = 0.0
             average_exploration_tendency = 0.0
             average_site_fidelity = 0.0
             average_risk_tolerance = 0.0
@@ -1284,25 +1307,20 @@ class Simulation:
                 / population_size
             )
 
-            # 現在の集団の平均世代
-            average_generation = (
-                sum(
-                    organism.generation
-                    for organism in self.organisms
-                )
-                / population_size
+            # 生存集団の世代数平均・個体間標準偏差・最大値
+            generation_values = np.fromiter(
+                (organism.generation for organism in self.organisms),
+                dtype=float, count=population_size,
             )
-
-            # 現在生存している個体の最大世代
-            max_generation = max(
-                organism.generation
-                for organism in self.organisms
-            )
+            average_generation = float(np.mean(generation_values))
+            std_generation = float(np.std(generation_values, ddof=0))
+            max_generation = int(np.max(generation_values))
 
         else:
             active_lineage_count = 0
             largest_lineage_share = 0.0
             average_generation = 0.0
+            std_generation = 0.0
             max_generation = 0
 
         
@@ -1318,7 +1336,9 @@ class Simulation:
             food_respawn_count=food_respawn_count,
             food_consumed_count=food_consumed_count,
             average_energy=average_energy,
+            std_energy=std_energy,
             average_age=average_age,
+            std_age=std_age,
             birth_count=birth_count,
             death_count=death_count,
             age_death_count=age_death_count,
@@ -1337,6 +1357,7 @@ class Simulation:
             shared_food_cell_count=shared_food_cell_count,
             shared_food_consumer_count=shared_food_consumer_count,
             mean_consumers_per_shared_food=mean_consumers_per_shared_food,
+            std_consumers_per_shared_food=std_consumers_per_shared_food,
             birth_rate=birth_rate,
             gene_exchange_eligible_count=gene_exchange_eligible_count,
             gene_exchange_event_count=gene_exchange_event_count,
@@ -1380,6 +1401,7 @@ class Simulation:
             active_lineage_count=active_lineage_count,
             largest_lineage_share=largest_lineage_share,
             average_generation=average_generation,
+            std_generation=std_generation,
             max_generation=max_generation,
         )
         

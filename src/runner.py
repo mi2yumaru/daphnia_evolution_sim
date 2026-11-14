@@ -317,6 +317,11 @@ def build_lineage_strategy_summary(
                 if final_alive_count > 0
                 else pd.NA
             ),
+            "final_std_generation": (
+                alive_group["generation"].std(ddof=0)
+                if final_alive_count > 0
+                else pd.NA
+            ),
 
             "final_max_generation": (
                 int(
