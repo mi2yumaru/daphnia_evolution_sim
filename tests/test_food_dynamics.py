@@ -1,5 +1,6 @@
 from src.environment import Environment
 from src.logger import SimulationLogger
+import math
 
 
 def test_respawn_food_returns_actual_added_count() -> None:
@@ -28,7 +29,9 @@ def test_logger_records_food_dynamics_columns() -> None:
         population_size=1,
         food_count=5,
         average_energy=1.0,
+        std_energy=0.0,
         average_age=2.0,
+        std_age=0.0,
         birth_count=0,
         death_count=0,
         age_death_count=0,
@@ -47,6 +50,7 @@ def test_logger_records_food_dynamics_columns() -> None:
         shared_food_cell_count=0,
         shared_food_consumer_count=0,
         mean_consumers_per_shared_food=0.0,
+        std_consumers_per_shared_food=float("nan"),
         birth_rate=0.0,
         death_rate=0.0,
         age_death_rate=0.0,
@@ -96,6 +100,7 @@ def test_logger_records_food_dynamics_columns() -> None:
         active_lineage_count=0,
         largest_lineage_share=0.0,
         average_generation=0.0,
+        std_generation=0.0,
         max_generation=0,
         food_respawn_count=0,
         food_consumed_count=0,
@@ -104,3 +109,7 @@ def test_logger_records_food_dynamics_columns() -> None:
     df = logger.to_dataframe()
     assert "food_respawn_count" in df.columns
     assert "food_consumed_count" in df.columns
+    assert df.loc[0, "std_energy"] == 0.0
+    assert df.loc[0, "std_age"] == 0.0
+    assert df.loc[0, "std_generation"] == 0.0
+    assert math.isnan(df.loc[0, "std_consumers_per_shared_food"])
