@@ -11,20 +11,14 @@ import yaml
 try:
     from src.runner import run_single_simulation
     from src.visualizer import (
-        COMMON_PLOT_SPECS,
         add_derived_metrics,
-        plot_aggregate_mean_std,
-        plot_food_dynamics,
-        plot_food_respawn_rate,
+        save_all_aggregate_plots,
     )
 except ImportError:
     from runner import run_single_simulation
     from visualizer import (
-        COMMON_PLOT_SPECS,
         add_derived_metrics,
-        plot_aggregate_mean_std,
-        plot_food_dynamics,
-        plot_food_respawn_rate,
+        save_all_aggregate_plots,
     )
 
 # STEP1_AUTO_OUTCOMES_V1: import
@@ -70,6 +64,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="各seedの個別グラフも保存します。"
     )
+    parser.add_argument(
+        "--no-plots",
+        action="store_true",
+        help="すべてのグラフ出力を省略し、CSVログと集計だけを保存します。"
+    )
 
     parser.add_argument(
         "--experiment-name",
@@ -85,7 +84,10 @@ def parse_args() -> argparse.Namespace:
         default=None,
         help="Founder initial placement (overrides organism.initial_placement_mode)",
     )
-    return parser.parse_args()
+    args = parser.parse_args()
+    if args.no_plots and args.save_run_plots:
+        parser.error("--no-plots と --save-run-plots は同時指定できません")
+    return args
 
 def aggregate_runs(all_logs: list[pd.DataFrame]) -> pd.DataFrame:
     """
@@ -332,7 +334,7 @@ def main() -> None:
             output_dir=seed_dir,
             live=False,
             save_csv=True,
-            save_plots=args.save_run_plots,
+            save_plots=args.save_run_plots and not args.no_plots,
         )
 
         # グラフ・集計用の派生指標を追加
@@ -403,7 +405,9 @@ def main() -> None:
     # STEP3_GENE_FLOW_V1: seed間の提供関係・交差Founder遺伝子移動を集計
     flow_settings = config.get("analysis", {}).get("gene_flow", {})
     if flow_settings.get("enabled", True):
-        aggregate_gene_flow_experiment(experiment_dir, args.seeds)
+        aggregate_gene_flow_experiment(
+            experiment_dir, args.seeds, save_plots=not args.no_plots
+        )
         print("遺伝子提供・Founder系譜間のseed間集計完了")
 
     # 全seedのFounder系統summaryを結合
@@ -442,50 +446,10 @@ def main() -> None:
         index=False,
     )
 
-    # -------------------------
-    # 共通グラフ / 単一seed専用グラフ
-    # -------------------------
-    plot_food_respawn_rate(
-        all_logs[0],
-        experiment_dir / "food_respawn_rate.png",
-    )
-
-    plot_food_dynamics(
-        aggregate_df,
-        experiment_dir / "food_dynamics_mean_std.png",
-    )
-
-    for spec in COMMON_PLOT_SPECS:
-        if spec["name"] == "food_respawn_rate":
-            continue
-        if spec["name"] == "food_dynamics":
-            continue
-
-        output_path = experiment_dir / spec["aggregate_output_name"]
-        plot_aggregate_mean_std(
-            aggregate_df,
-            output_path,
-            metrics=spec["metrics"],
-            title=f"{spec['title']} Across Seeds",
-            ylabel=spec["ylabel"],
-            fixed_ylim=spec.get("fixed_ylim"),
-        )
-
-    if "largest_lineage_share_mean" in aggregate_df.columns:
-        largest_lineage_upper = (
-            aggregate_df["largest_lineage_share_mean"]
-            + aggregate_df["largest_lineage_share_std"].fillna(0.0)
-        ).max()
-        largest_lineage_ymax = max(largest_lineage_upper * 1.1, 0.1)
-        largest_lineage_ymax = min(largest_lineage_ymax, 1.0)
-
-        plot_aggregate_mean_std(
-            aggregate_df,
-            experiment_dir / "largest_lineage_share_mean_std.png",
-            metrics=[("largest_lineage_share", "Largest Lineage Share")],
-            title="Largest Lineage Share Across Seeds",
-            ylabel="Share",
-            fixed_ylim=(0.0, largest_lineage_ymax),
+    # Full plotting can be reproduced later using saved CSVs.
+    if not args.no_plots:
+        save_all_aggregate_plots(
+            aggregate_df, all_logs[0], experiment_dir
         )
 
     print("\n=== 複数seed実験完了 ===")
