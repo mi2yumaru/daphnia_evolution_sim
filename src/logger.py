@@ -32,7 +32,9 @@ class SimulationLogger:
         food_respawn_count: int,
         food_consumed_count: int,
         average_energy: float,
+        std_energy: float,
         average_age: float,
+        std_age: float,
         birth_count: int,
         gene_exchange_eligible_count: int,
         gene_exchange_event_count: int,
@@ -61,6 +63,7 @@ class SimulationLogger:
         shared_food_cell_count: int,
         shared_food_consumer_count: int,
         mean_consumers_per_shared_food: float,
+        std_consumers_per_shared_food: float,
         birth_rate: float,
         death_rate: float,
         age_death_rate: float,
@@ -98,6 +101,7 @@ class SimulationLogger:
         active_lineage_count: int,
         largest_lineage_share: float,
         average_generation: float,
+        std_generation: float,
         max_generation: int,
         # FOOD_FLOW_LOGGING_V1: optional for backward compatibility with old tests
         patch_area: int | None = None,
@@ -129,7 +133,9 @@ class SimulationLogger:
             food_respawn_count: このステップで実際に増えた餌マス数
             food_consumed_count: このステップで実際に消費され削除された餌マス数
             average_energy: 個体群の平均エネルギー
+            std_energy: 生存個体間のエネルギー標準偏差（ddof=0）
             average_age: 個体群の平均年齢
+            std_age: 生存個体間の年齢標準偏差（ddof=0）
             birth_count: このステップで生まれた個体数
             death_count: このステップで死んだ個体数
             age_death_count: このステップで年齢による死亡数
@@ -148,6 +154,7 @@ class SimulationLogger:
             shared_food_cell_count: 共有餌のマス数
             shared_food_consumer_count: 共有餌を消費した個体数
             mean_consumers_per_shared_food: 共有餌1マスあたりの平均摂食個体数
+            std_consumers_per_shared_food: 共有餌マス間の摂食個体数標準偏差（共有なしはNaN）
             birth_rate: 繁殖率
             gene_exchange_eligible_count: このステップで出生した個体のうち、donor候補が1個体以上存在した繁殖数
             gene_exchange_event_count: このステップで実際に遺伝子交換イベントが発生した繁殖数
@@ -185,6 +192,7 @@ class SimulationLogger:
             active_lineage_count: 現在生存しているFounder系統数
             largest_lineage_share: 最大系統が集団に占める割合
             average_generation: 現在の集団の平均世代
+            std_generation: 生存個体間の世代数標準偏差（ddof=0）
             max_generation: 現在生存している個体の最大世代
         """
         self.logs.append({
@@ -199,7 +207,9 @@ class SimulationLogger:
             "food_respawn_count": food_respawn_count,
             "food_consumed_count": food_consumed_count,
             "average_energy": average_energy,
+            "std_energy": std_energy,
             "average_age": average_age,
+            "std_age": std_age,
             "birth_count": birth_count,
             "gene_exchange_eligible_count": gene_exchange_eligible_count,
             "gene_exchange_event_count": gene_exchange_event_count,
@@ -228,6 +238,7 @@ class SimulationLogger:
             "shared_food_cell_count": shared_food_cell_count,
             "shared_food_consumer_count": shared_food_consumer_count,
             "mean_consumers_per_shared_food": mean_consumers_per_shared_food,
+            "std_consumers_per_shared_food": std_consumers_per_shared_food,
             "birth_rate": birth_rate,
             "death_rate": death_rate,
             "age_death_rate": age_death_rate,
@@ -265,6 +276,7 @@ class SimulationLogger:
             "active_lineage_count": active_lineage_count,
             "largest_lineage_share": largest_lineage_share,
             "average_generation": average_generation,
+            "std_generation": std_generation,
             "max_generation": max_generation,
             "patch_area": patch_area,
             "outside_area": outside_area,
