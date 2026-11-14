@@ -71,6 +71,21 @@ def plot_saved_experiment(
         raise FileNotFoundError(
             f"描画用の seed_*/log.csv が見つかりません: {experiment_dir}"
         )
+
+    # Do not mix older seed folders left in a reused experiment directory.
+    # summary.csv preserves the actual seed list/order used for aggregate.csv.
+    summary_path = experiment_dir / "summary.csv"
+    if summary_path.is_file():
+        summary = pd.read_csv(summary_path, usecols=["seed"])
+        seeds = summary["seed"].astype(int).tolist()
+        if not seeds or len(set(seeds)) != len(seeds):
+            raise ValueError(f"summary.csv のseed一覧が不正です: {summary_path}")
+        lookup = dict(seed_dirs)
+        missing = [seed for seed in seeds if seed not in lookup]
+        if missing:
+            raise FileNotFoundError(f"集約対象のseedログが見つかりません: {missing}")
+        seed_dirs = [(seed, lookup[seed]) for seed in seeds]
+
     if reference_seed is None:
         selected = seed_dirs[0][1]
     else:
