@@ -16,6 +16,12 @@ import pandas as pd
 # whereas event probabilities are computed below from summed integer counts.
 MEAN_METRICS = {
     "population_size": "mean_population_last_year",
+    "average_energy": "mean_energy_last_year",
+    "std_energy": "mean_within_population_std_energy_last_year",
+    "average_age": "mean_age_last_year",
+    "std_age": "mean_within_population_std_age_last_year",
+    "std_generation": "mean_within_population_std_generation_last_year",
+    "std_consumers_per_shared_food": "mean_within_shared_food_std_consumers_last_year",
     "food_count": "mean_food_count_last_year",
     "food_respawn_rate": "mean_food_respawn_rate_last_year",
     "food_respawn_count": "mean_food_respawn_count_last_year",
