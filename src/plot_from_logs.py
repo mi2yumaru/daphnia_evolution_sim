@@ -124,7 +124,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--reference-seed", type=int, default=None,
-        help="餌リポップ率描画に使う代表seed（指定なしは最小のseed番号）",
+        help="餌リポップ率描画に使う代表seed（指定なしはsummary.csv先頭、なければ最小seed）",
     )
     args = parser.parse_args()
     if args.single_run_dir is not None:
