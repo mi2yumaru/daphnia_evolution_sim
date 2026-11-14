@@ -549,11 +549,30 @@ python src/run_experiments.py --seeds 0 1 2 3 4 5 6 7 8 9 --experiment-name base
 - `--experiment-name`: 実験結果ディレクトリ名
 - `--save-run-plots`: 各seedの個別グラフも保存
 
+### 実行・ログ保存・グラフ描画の3モード
+
+既存のCSV・分析集計は維持し、グラフ生成のタイミングを分離できます。
+
+| モード | 単一seed | 複数seed |
+| --- | --- | --- |
+| 実行＋ログ＋グラフ | `python src/main.py --seed 42` | `python src/run_experiments.py --config configs/step4_patch9.yaml --seeds 0 1 2 3 4 5 6 7 8 9 --experiment-name patch9_10seeds` |
+| 実行＋ログのみ（PNG不要） | `python src/main.py --seed 42 --no-plots` | `python src/run_experiments.py --config configs/step4_patch9.yaml --seeds 0 1 2 3 4 5 6 7 8 9 --experiment-name patch9_10seeds --no-plots` |
+| 保存済みCSVから再描画（シミュレーションなし） | `python src/plot_from_logs.py --single-run-dir results/single_runs/seed_42` | `python src/plot_from_logs.py --experiment-dir results/experiments/patch9_10seeds` |
+
+- 複数seedの`--no-plots`は`--save-run-plots`と同時に指定できません。CSV（各seedの`log.csv`、`lineage.csv`、集計用`aggregate.csv`、`summary.csv`、系譜・遺伝子交換分析CSVなど）は通常通り保存します。
+- 複数seed実行で`--save-run-plots`を付けた場合、通常の集約グラフに加えて各seedの個別グラフも生成します。
+- 再描画は既存のCSVを読み込んでPNGのみを出力し、シミュレーションを回したりCSVを再集計・書き換えたりしません。既存PNGがある場合は上書きします。
+- 複数seedで各seedのグラフも後から出したい場合は、再描画コマンドに`--save-run-plots`を追加します。
+- 複数seed再描画時は`aggregate.csv`と少なくとも一つの`seed_*/log.csv`が必要です。`summary.csv`があれば、そのseed一覧・順序に従います。`--reference-seed 0`で餌リポップ率グラフの代表seedを指定することもできます。
+- 遺伝子交換関連のグラフは保存済みの`gene_flow_by_window.csv`または`gene_flow_windows_across_seeds.csv`がある場合のみ再描画します。
+- 実行ステップ数は`configs/default.yaml`や`--config`で選択したYAMLの`simulation.duration_mode`に従います。`--no-plots`は実行期間を短縮するオプションではありません。
+
 ### ヘルプ
 
 ```bash
 python src/main.py --help
 python src/run_experiments.py --help
+python src/plot_from_logs.py --help
 ```
 
 ## 出力構成

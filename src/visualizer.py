@@ -922,3 +922,52 @@ def plot_aggregate_mean_std(
     plt.tight_layout()
     plt.savefig(output_path, dpi=150)
     plt.close()
+
+def save_all_aggregate_plots(
+    aggregate_df: pd.DataFrame,
+    reference_seed_df: pd.DataFrame,
+    output_dir: str | Path,
+) -> None:
+    """Plot an existing multi-seed aggregate without rerunning simulations.
+
+    The representative seed is used only for the food respawn calendar plot,
+    as in run_experiments.py. Other plots use the precomputed aggregate CSV.
+    """
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    plot_food_respawn_rate(
+        reference_seed_df, output_dir / "food_respawn_rate.png"
+    )
+    plot_food_dynamics(
+        aggregate_df, output_dir / "food_dynamics_mean_std.png"
+    )
+
+    for spec in COMMON_PLOT_SPECS:
+        if spec["name"] in {"food_respawn_rate", "food_dynamics"}:
+            continue
+        plot_aggregate_mean_std(
+            aggregate_df,
+            output_dir / spec["aggregate_output_name"],
+            metrics=spec["metrics"],
+            title=f"{spec['title']} Across Seeds",
+            ylabel=spec["ylabel"],
+            fixed_ylim=spec.get("fixed_ylim"),
+        )
+
+    # Preserve the existing dynamic y-axis treatment for lineage shares.
+    if "largest_lineage_share_mean" in aggregate_df.columns:
+        largest_lineage_upper = (
+            aggregate_df["largest_lineage_share_mean"]
+            + aggregate_df["largest_lineage_share_std"].fillna(0.0)
+        ).max()
+        largest_lineage_ymax = max(largest_lineage_upper * 1.1, 0.1)
+        largest_lineage_ymax = min(largest_lineage_ymax, 1.0)
+        plot_aggregate_mean_std(
+            aggregate_df,
+            output_dir / "largest_lineage_share_mean_std.png",
+            metrics=[("largest_lineage_share", "Largest Lineage Share")],
+            title="Largest Lineage Share Across Seeds",
+            ylabel="Share",
+            fixed_ylim=(0.0, largest_lineage_ymax),
+        )
