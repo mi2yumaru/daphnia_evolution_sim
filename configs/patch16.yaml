@@ -91,8 +91,16 @@ organism:
   # STEP3_CONTROLLED_INITIAL_PLACEMENT_V1
   initial_placement_mode: "uniform"  # uniform / inside / near / far
   paired_initialization: true  # STEP4: keep founder positions/genomes fixed across environments
-  initial_placement_near_max_distance: 3.0  # outside patch; 0 < distance <= 3
-  initial_placement_far_min_distance: 15.0  # outside patch; distance >= 15
+  # 初期配置の距離閾値はパッチ中心間の最短周期距離Lから決定
+  # near: 最寄りパッチ領域から L/5 以下（ただしパッチ領域外）
+  # far: 最寄りパッチ領域から 0.4*L 以上
+  # 現在は uniform なので初期配置には影響しない
+  initial_placement_distance_mode: "relative"
+  initial_placement_near_fraction: 0.2
+  initial_placement_far_fraction: 0.4
+  # fixedモードに切り替えた場合のみ使用
+  initial_placement_near_max_distance: 3.0
+  initial_placement_far_min_distance: 15.0
   initial_energy: 10
   move_cost: 0.5
   living_cost: 0.3
