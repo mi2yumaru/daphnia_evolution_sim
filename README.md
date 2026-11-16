@@ -124,7 +124,16 @@ environment:
   height: 100
 ```
 
-グリッドの境界は周期境界ではありません。
+標準設定では周期境界を使用します。X・Y座標がマップ外に出た場合、対応する反対側の端へ折り返します。従来の境界条件を再現する場合は `environment.periodic_boundary: false` に指定してください。
+
+```yaml
+environment:
+  width: 100
+  height: 100
+  periodic_boundary: true
+```
+
+周期距離は各軸の最短折り返し距離から計算し、移動、餌の探索、遺伝子提供候補の探索、出生位置、記憶した餌場への接近判定で共通に使用します。マップの境界に物理的な壁が存在するわけではありません。
 
 ### 食料配置
 
@@ -173,9 +182,20 @@ environment:
 
 過去の `configs/step4_patch9.yaml` と `configs/step4_patch25.yaml` は変更していません。`patch_radius_mode` を省略した既存設定は旧実装どおり、`patch_radius + 0.5` の判定を適用します（`legacy` モード）。
 
-**現段階では周期境界は未導入です。** 新しい中心座標は将来の周期境界を考慮して間隔を決めていますが、移動・餌認識・子個体配置・遺伝子提供候補探索・初期配置の距離判定は引き続き非周期です。周期境界導入後に、パッチの分離と面積を再検証します。
+**今回から標準の4パッチ・16パッチ条件は周期境界です。** 境界をまたいだ円形パッチも正しく折り返すよう実装しました。新しい配置では1パッチあたり149/37マス、総面積596/592マスで、個々のパッチは重複しません。
 
-16パッチを指定する場合の実行例：
+初期配置の `near`・`far` で用いる距離も周期距離に対応しました。ただし、**閾値の相対距離化は次段階**で対応します。現時点の既定値（near=3、far=15）はそのままなので、16パッチ条件の `far` は候補がなくなる場合があります。現在の `uniform` 初期配置には影響しません。
+
+過去の9・25パッチ比較用の `step4_*.yaml` は非周期・旧半径計算法のまま保存しており、過去データの再現用です。新しい比較では `configs/random_periodic.yaml`、`configs/default.yaml`（4パッチ）、`configs/patch16.yaml`（16パッチ）を使ってください。
+
+新しい3条件の実行例：
+
+```bash
+python src/run_experiments.py --config configs/random_periodic.yaml --seeds 0 1 2 --experiment-name pilot_random_periodic --no-plots
+python src/run_experiments.py --config configs/default.yaml --seeds 0 1 2 --experiment-name pilot_patch4_periodic --no-plots
+```
+
+16パッチを指定する場合：
 
 ```bash
 python src/run_experiments.py --config configs/patch16.yaml --seeds 0 1 2 --experiment-name pilot_patch16 --no-plots

@@ -22,6 +22,7 @@ def config_for(kind: str, seed: int) -> dict:
     env = c["environment"]
     # Reproduce the archived 9/25-patch radius + 0.5 convention.
     env["patch_radius_mode"] = "legacy"
+    env["periodic_boundary"] = False  # archived finite-boundary geometry
     if kind == "random":
         env["mode"] = "random"
     elif kind == "patch9":

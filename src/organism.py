@@ -8,6 +8,11 @@ organism.py - 個体の定義
 from typing import List, Optional, Tuple, Dict, Any
 import numpy as np
 
+try:
+    from .spatial import wrap_coordinate, manhattan_distance
+except ImportError:
+    from spatial import wrap_coordinate, manhattan_distance
+
 
 class Organism:
     """
@@ -204,7 +209,8 @@ class Organism:
         move_type: str,
         environment: Any,
         low_energy: bool,
-        behavior_config: Dict[str, Any]
+        behavior_config: Dict[str, Any],
+        periodic_boundary: bool = False,
     ) -> bool:
         """
         個体を移動させる
@@ -256,12 +262,19 @@ class Organism:
         # 候補: (0, 0) は「移動しない」
         candidates = [(0, 0)]
 
-        # グリッド外に出る方向は候補から除く
+        # 有限境界では範囲外の方向を除外する。
+        # 周期境界では全方向を許可し、小さいグリッドで同じ
+        # 移動先が複数の方向に現れる場合は重複計上しない。
+        seen_targets = {(self.x, self.y)}
         for dx, dy in directions:
-            target_x = self.x + dx
-            target_y = self.y + dy
-            if 0 <= target_x < width and 0 <= target_y < height:
-                candidates.append((dx, dy))
+            target_x = wrap_coordinate(self.x + dx, width, periodic_boundary)
+            target_y = wrap_coordinate(self.y + dy, height, periodic_boundary)
+            if not (0 <= target_x < width and 0 <= target_y < height):
+                continue
+            if periodic_boundary and (target_x, target_y) in seen_targets:
+                continue
+            seen_targets.add((target_x, target_y))
+            candidates.append((dx, dy))
 
         # もし動ける方向がない場合は移動しない
         if len(candidates) == 1:
@@ -274,12 +287,19 @@ class Organism:
         # detection_range > 1 の場合は、その方向に何マス先まで見る
         food_directions = set()
 
-        for dx, dy in directions:
+        for dx, dy in candidates[1:]:
             for dist in range(1, detection_range + 1):
-                target_x = self.x + dx * dist
-                target_y = self.y + dy * dist
+                target_x = wrap_coordinate(
+                    self.x + dx * dist, width, periodic_boundary
+                )
+                target_y = wrap_coordinate(
+                    self.y + dy * dist, height, periodic_boundary
+                )
 
                 if not (0 <= target_x < width and 0 <= target_y < height):
+                    break
+                if (target_x, target_y) == (self.x, self.y):
+                    # A ray has wrapped back to its starting cell.
                     break
 
                 if environment.has_food(target_x, target_y):
@@ -320,16 +340,19 @@ class Organism:
 
                 # 最後に餌を食べた場所へ近づく方向を少し優遇
                 if use_site_memory and self.last_food_position is not None:
-                    target_x = self.x + dx
-                    target_y = self.y + dy
-
-                    distance_before = (
-                        abs(self.last_food_position[0] - self.x)
-                        + abs(self.last_food_position[1] - self.y)
+                    target_x = wrap_coordinate(
+                        self.x + dx, width, periodic_boundary
                     )
-                    distance_after = (
-                        abs(self.last_food_position[0] - target_x)
-                        + abs(self.last_food_position[1] - target_y)
+                    target_y = wrap_coordinate(
+                        self.y + dy, height, periodic_boundary
+                    )
+                    distance_before = manhattan_distance(
+                        self.last_food_position, (self.x, self.y),
+                        width, height, periodic_boundary,
+                    )
+                    distance_after = manhattan_distance(
+                        self.last_food_position, (target_x, target_y),
+                        width, height, periodic_boundary,
                     )
 
                     if distance_after < distance_before:
@@ -346,8 +369,8 @@ class Organism:
             choice = np.random.choice(len(candidates), p=probabilities)
             dx, dy = candidates[choice]
 
-        self.x = self.x + dx
-        self.y = self.y + dy
+        self.x = wrap_coordinate(self.x + dx, width, periodic_boundary)
+        self.y = wrap_coordinate(self.y + dy, height, periodic_boundary)
 
         return (self.x != old_x) or (self.y != old_y)
     
@@ -396,6 +419,7 @@ class Organism:
         offspring_lifespan: Optional[int] = None,
         donor_genome: Optional[np.ndarray] = None,
         exchange_loci: Optional[np.ndarray] = None,
+        periodic_boundary: bool = False,
     ) -> "Organism":
         """
         子個体を生成
@@ -499,8 +523,12 @@ class Organism:
         # 親の位置から±2以内の範囲にランダムに配置
         child_x = self.x + np.random.randint(-2, 3)
         child_y = self.y + np.random.randint(-2, 3)
-        child_x = max(0, min(child_x, width - 1))
-        child_y = max(0, min(child_y, height - 1))
+        if periodic_boundary:
+            child_x %= width
+            child_y %= height
+        else:
+            child_x = max(0, min(child_x, width - 1))
+            child_y = max(0, min(child_y, height - 1))
         
         child = Organism(
             x=child_x,

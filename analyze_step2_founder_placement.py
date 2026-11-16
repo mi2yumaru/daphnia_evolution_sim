@@ -54,6 +54,7 @@ def build_patch_cells(env: dict) -> set[tuple[int, int]]:
         patch_count=n,
         patch_radius=float(env["patch_radius"]),
         patch_radius_mode=env.get("patch_radius_mode", "legacy"),
+        periodic_boundary=bool(env.get("periodic_boundary", False)),
         patch_centers_config=centers,
     )
     patch_environment._init_patch_regions()

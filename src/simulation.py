@@ -57,6 +57,7 @@ class Simulation:
         # 設定の取得
         sim_config = config["simulation"]
         env_config = config["environment"]
+        self.periodic_boundary = bool(env_config.get("periodic_boundary", False))
         org_config = config["organism"]
         gen_config = config["genetics"]
 
@@ -210,6 +211,7 @@ class Simulation:
             patch_count=env_config.get("patch_count", 4),
             patch_radius=env_config.get("patch_radius", 5),
             patch_radius_mode=env_config.get("patch_radius_mode", "legacy"),
+            periodic_boundary=self.periodic_boundary,
             patch_density=env_config.get("patch_density", 0.8),
             outside_respawn_fraction=env_config.get("outside_respawn_fraction", 0.05),
             patch_layout=env_config.get("patch_layout", "random"),
@@ -352,6 +354,7 @@ class Simulation:
                 far_min_distance=float(org_config.get(
                     "initial_placement_far_min_distance", 15.0
                 )),
+                periodic_boundary=self.periodic_boundary,
             )
             if not initial_placement_candidates_list:
                 raise ValueError(
@@ -559,22 +562,31 @@ class Simulation:
         """
 
         candidates: List[Organism] = []
+        visited_positions: set[Tuple[int, int]] = set()
+        width = self.environment.width
+        height = self.environment.height
 
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):
-                target_position = (
-                    parent.x + dx,
-                    parent.y + dy,
-                )
+                tx = parent.x + dx
+                ty = parent.y + dy
+                if self.periodic_boundary:
+                    tx %= width
+                    ty %= height
+                elif not (0 <= tx < width and 0 <= ty < height):
+                    continue
+                target_position = (tx, ty)
+                if target_position in visited_positions:
+                    continue
+                visited_positions.add(target_position)
 
                 for candidate in organisms_by_position.get(
-                    target_position,
-                    [],
+                    target_position, []
                 ):
-                    # 自分自身はdonorにしない
+                    # Do not count the parent as a donor, including its
+                    # periodic aliases on very small maps.
                     if candidate.organism_id == parent.organism_id:
                         continue
-
                     candidates.append(candidate)
 
         return candidates
@@ -889,7 +901,8 @@ class Simulation:
                 org_config["move_type"],
                 self.environment,
                 low_energy,
-                behavior_settings
+                behavior_settings,
+                periodic_boundary=self.periodic_boundary,
             )
             if moved:
                 move_count += 1
@@ -1081,6 +1094,7 @@ class Simulation:
                     offspring_lifespan=offspring_lifespan,
                     child_organism_id=child_organism_id,
                     birth_step=self.current_step,
+                    periodic_boundary=self.periodic_boundary,
 
                     donor_genome=(
                         donor.genome
