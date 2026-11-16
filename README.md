@@ -652,6 +652,27 @@ python src/run_experiments.py --seeds 0 1 2 3 4 5 6 7 8 9 --experiment-name base
 - 遺伝子交換関連のグラフは保存済みの`gene_flow_by_window.csv`または`gene_flow_windows_across_seeds.csv`がある場合のみ再描画します。
 - 実行ステップ数は`configs/default.yaml`や`--config`で選択したYAMLの`simulation.duration_mode`に従います。`--no-plots`は実行期間を短縮するオプションではありません。
 
+### 餌再生成処理の高速化（再現性の検証）
+
+パッチ領域は実験中に変わらないため、`Environment._get_patch_cells()` の結果をキャッシュして再利用します。餌の再生成時、パッチ外の空きセル判定にはキャッシュされた `set` を利用します。**候補セルの列挙順序、`np.random.choice` の呼び出し、餌供給割合・個数の計算は変更していません。**
+
+以下のテストでは、最適化前の再生成処理と最適化後の処理を、同じseedの初期状態・乱数状態から開始し、餌配置・食料フローカウンタ・乱数状態・短いシミュレーション全体のログを比較します。
+
+```bash
+python -m pytest tests/test_food_respawn_optimization.py -q
+python -m pytest tests -q
+```
+
+Windows PowerShellで処理時間を比較するときは、最適化前と**同じ** `results/profile_config.yaml`（1,000step・seed 0）を使い、グラフを出力しない状態で計測します。
+
+```powershell
+Measure-Command {
+    python src/run_experiments.py --config results/profile_config.yaml --seeds 0 --experiment-name speed_after --no-plots
+}
+```
+
+結果が一致したことを確認してからマージしてください。計測は通常実行の `TotalSeconds` を比較します（cProfile実行は計測負荷があるので高速化率の判定に使いません）。
+
 ### ヘルプ
 
 ```bash
