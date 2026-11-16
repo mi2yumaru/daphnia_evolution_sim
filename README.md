@@ -251,6 +251,27 @@ organism:
 
 死亡原因は、系譜ログとstepログの両方に記録されます。
 
+### 個体ごとの寿命上限
+
+現在の標準設定は、200〜400 step（20〜40日）の**切断正規分布**です。正規乱数が範囲外になった場合は再抽選してから最近接整数に丸めます。
+
+```yaml
+organism:
+  randomize_initial_age: false
+  randomize_lifespan: true
+  lifespan_distribution: "truncated_normal"
+  lifespan_min: 200
+  lifespan_max: 400
+  lifespan_mean: 300
+  lifespan_std: 50
+```
+
+- `lifespan_mean` と `lifespan_std` は**切断前**の正規分布のパラメータです。切断後の標準偏差は50 stepより小さくなります。
+- この値は**年齢による死亡の上限**を表します。個体はエネルギー枯渇によって、これより早く死亡することがあります。
+- 初期個体と出生した子個体は同じ分布から独立に寿命を抽選します。同じ乱数seedなら抽選は再現できます。
+- `randomize_lifespan: false` なら `max_age` に固定します。`lifespan_distribution: "uniform"` または同キーを省略した従来設定では、`lifespan_min`〜`lifespan_max` の離散一様分布を使用します。
+- 数値はモデル上の仮定であり、特定種の実測寿命分布を直接推定したものではありません。
+
 ## ゲノムと表現型
 
 ### ゲノム構造
@@ -692,6 +713,9 @@ results/experiments/{experiment_name}/
 - `organism.offspring_energy`
 - `organism.randomize_initial_age`
 - `organism.randomize_lifespan`
+- `organism.lifespan_distribution`
+- `organism.lifespan_mean`
+- `organism.lifespan_std`
 - `organism.lifespan_min`
 - `organism.lifespan_max`
 - `organism.max_age`
