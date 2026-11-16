@@ -673,6 +673,29 @@ Measure-Command {
 
 結果が一致したことを確認してからマージしてください。計測は通常実行の `TotalSeconds` を比較します（cProfile実行は計測負荷があるので高速化率の判定に使いません）。
 
+### 移動処理の高速化（行動ルールは変更しない）
+
+`Organism.move()` について、移動前の「記憶している餌の場所までのマンハッタン距離」を移動候補ごとの計算から**個体・ステップあたり1回**の計算に変更しました。また、隣接移動先の折り返し座標を再利用し、方向の定義と重み配列の合計も再計算しないようにしました。
+
+**探索傾向、移動重み、移動候補の順序、`np.random.choice` の呼び出し回数・確率、乱数の進行は変更しません。** 個体の行動重み（例：現在マス8・隣接餌4・記憶2）の変更は別途実施します。
+
+旧実装は `tests/reference_move_baseline.py` に固定し、以下で各方向の選択確率・乱数状態・移動先・短いシミュレーション全体のログを厳密に比較できます。
+
+```bash
+python -m pytest tests/test_move_optimization.py -q
+python -m pytest tests -q
+```
+
+比較前の基準は、餌再生成高速化後の `speed_after`（seed0、1000step、`--no-plots`）の **約31.09秒**です。同じ `results/profile_config.yaml` を使って計測してください。
+
+```powershell
+Measure-Command {
+    python src/run_experiments.py --config results/profile_config.yaml --seeds 0 --experiment-name move_after --no-plots
+}
+```
+
+`results/experiments/speed_after/` と `results/experiments/move_after/` に保存されたCSVを比較し、同じ出力になることを確認してからマージしてください。
+
 ### ヘルプ
 
 ```bash
