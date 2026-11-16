@@ -253,13 +253,64 @@ def test_initial_placement_uses_shortest_wrapped_distance() -> None:
     assert (1, 5) in near_periodic
 
 
-def test_default_and_patch16_preserve_paired_founders_in_torus() -> None:
-    a_cfg, b_cfg = config(), config("patch16.yaml")
-    a_cfg["simulation"]["random_seed"] = 123
-    b_cfg["simulation"]["random_seed"] = 123
-    a, b = Simulation(a_cfg), Simulation(b_cfg)
-    assert len(a.organisms) == len(b.organisms) == 100
-    for left, right in zip(a.organisms, b.organisms):
-        assert (left.x, left.y) == (right.x, right.y)
-        assert np.array_equal(left.genome, right.genome)
-        assert left.lifespan == right.lifespan
+def test_periodic_random_and_both_patch_modes_have_paired_founders() -> None:
+    configs = [
+        config("random_periodic.yaml"),
+        config("default.yaml"),
+        config("patch16.yaml"),
+    ]
+    assert [c["environment"]["mode"] for c in configs] == [
+        "random", "patch", "patch"
+    ]
+    for case in configs:
+        case["simulation"]["random_seed"] = 123
+        assert case["environment"]["periodic_boundary"] is True
+    sims = [Simulation(case) for case in configs]
+    for other in sims[1:]:
+        assert len(other.organisms) == len(sims[0].organisms) == 100
+        for left, right in zip(sims[0].organisms, other.organisms):
+            assert (left.x, left.y) == (right.x, right.y)
+            assert np.array_equal(left.genome, right.genome)
+            assert left.lifespan == right.lifespan
+
+
+def test_vertical_wrap_and_diagonal_sensing(monkeypatch) -> None:
+    env = Environment(100, 100, periodic_boundary=True)
+    env.food.add((99, 99))
+    agent = organism(0, 0)
+    captured = {}
+
+    def choose(n, p):
+        captured["p"] = np.array(p)
+        return 1  # (-1, -1) crosses both boundaries
+
+    monkeypatch.setattr(np.random, "choice", choose)
+    agent.move(100, 100, "moore", env, False, behavior(), True)
+    assert (agent.x, agent.y) == (99, 99)
+    assert captured["p"][1] > captured["p"][7]
+
+
+def test_patch_region_food_flow_on_wrapped_edge() -> None:
+    env = Environment(
+        width=100, height=100, respawn_mode="patch",
+        patch_count=1, patch_radius=2, patch_radius_mode="exact",
+        patch_centers_config=[(0, 0)], periodic_boundary=True,
+    )
+    env.init_food(13)
+    region = set(env._get_patch_cells())
+    assert len(region) == 13
+    assert env.food == region
+    assert env.get_food_flow_metrics()["patch_area"] == 13
+    env.reset_food_flow_counters()
+    env.remove_food(-1, 0)
+    stats = env.get_food_flow_metrics()
+    assert stats["food_consumed_in"] == 1
+    assert stats["food_in"] == 12
+
+
+def test_legacy_config_remains_nonperiodic() -> None:
+    cfg = config("step4_patch9.yaml")
+    assert cfg["environment"].get("periodic_boundary", False) is False
+    sim = Simulation(cfg)
+    assert not sim.periodic_boundary
+    assert len(sim.environment._get_patch_cells()) == 529
