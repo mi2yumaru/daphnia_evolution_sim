@@ -128,10 +128,14 @@ organism:
 
   # 個体ごとに寿命をランダム化するか
   randomize_lifespan: true
+  lifespan_distribution: truncated_normal
+  lifespan_mean: 300
+  lifespan_std: 50
 
-  # randomize_lifespan=true の場合の寿命範囲
-  lifespan_min: 150
-  lifespan_max: 250
+  # randomize_lifespan=true の場合の寿命分布と範囲
+  # truncated_normal は範囲外を再抽選する切断正規分布（mean/std は切断前）
+  lifespan_min: 200
+  lifespan_max: 400
 
   # randomize_lifespan=false の場合に使用する固定寿命
   max_age: 200
