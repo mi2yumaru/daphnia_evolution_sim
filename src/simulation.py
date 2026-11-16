@@ -256,6 +256,30 @@ class Simulation:
             )
         )
 
+        # randomize_lifespan=True のときに使う寿命分布
+        # 未指定の既存設定は一様分布として解釈する（後方互換）。
+        self.lifespan_distribution = str(
+            org_config.get("lifespan_distribution", "uniform")
+        )
+        self.lifespan_mean = float(
+            org_config.get(
+                "lifespan_mean",
+                (self.lifespan_min + self.lifespan_max) / 2.0,
+            )
+        )
+        self.lifespan_std = float(
+            org_config.get(
+                "lifespan_std",
+                (self.lifespan_max - self.lifespan_min) / 4.0,
+            )
+        )
+
+        if self.lifespan_distribution not in {"uniform", "truncated_normal"}:
+            raise ValueError(
+                "organism.lifespan_distribution must be "
+                "'uniform' or 'truncated_normal'"
+            )
+
         if self.fixed_lifespan <= 0:
             raise ValueError(
                 f"max_age must be positive, got {self.fixed_lifespan}"
@@ -272,6 +296,23 @@ class Simulation:
                     "lifespan_min must be <= lifespan_max"
                 )
             
+        if self.randomize_lifespan and self.lifespan_distribution == "truncated_normal":
+            if self.lifespan_min == self.lifespan_max:
+                raise ValueError(
+                    "Truncated normal lifespan requires lifespan_min < lifespan_max"
+                )
+            if not (
+                np.isfinite(self.lifespan_mean)
+                and self.lifespan_min <= self.lifespan_mean <= self.lifespan_max
+            ):
+                raise ValueError(
+                    "organism.lifespan_mean must be finite and within lifespan bounds"
+                )
+            if not (np.isfinite(self.lifespan_std) and self.lifespan_std > 0):
+                raise ValueError(
+                    "organism.lifespan_std must be finite and > 0"
+                )
+
         # 個体ID管理
         self.next_organism_id: int = 0
 
@@ -473,23 +514,35 @@ class Simulation:
     
     def _sample_lifespan(self) -> int:
         """
-        個体の寿命を生成する。
+        個体の寿命上限（年齢による死亡閾値）を生成する。
 
-        randomize_lifespan=true:
-            lifespan_min ～ lifespan_max の一様分布
-
-        randomize_lifespan=false:
-            max_age の固定値
+        randomize_lifespan=false: max_age の固定値。
+        uniform: lifespan_min ～ lifespan_max の離散一様分布。
+        truncated_normal: 指定範囲内の正規乱数を棄却法で採用し、
+            最近接整数に丸める。mean/std は切断前の分布のパラメータ。
         """
         if not self.randomize_lifespan:
             return self.fixed_lifespan
 
-        return int(
-            self.lifespan_rng.integers(
-                low=self.lifespan_min,
-                high=self.lifespan_max + 1,
+        if self.lifespan_distribution == "uniform":
+            return int(
+                self.lifespan_rng.integers(
+                    low=self.lifespan_min,
+                    high=self.lifespan_max + 1,
+                )
             )
-        )
+
+        # 上下限に丸める（clip）と境界値に質量が集中するため、
+        # 範囲外の値を棄却して再抽選する。
+        while True:
+            value = float(
+                self.lifespan_rng.normal(
+                    loc=self.lifespan_mean,
+                    scale=self.lifespan_std,
+                )
+            )
+            if self.lifespan_min <= value <= self.lifespan_max:
+                return int(np.rint(value))
 
     def _get_gene_exchange_donor_candidates(
         self,
