@@ -41,6 +41,10 @@ def build_patch_cells(env: dict) -> set[tuple[int, int]]:
     if len(centers) < n:
         raise ValueError("patch_centers has fewer centers than patch_count")
     width, height = int(env["width"]), int(env["height"])
+    for raw_x, raw_y in centers[:n]:
+        x, y = int(raw_x), int(raw_y)
+        if not (0 <= x < width and 0 <= y < height):
+            raise ValueError(f"Invalid center {(x, y)}")
     # Use the same geometry as the simulator, including exact fractional
     # radii and the historical integer radius + 0.5 convention.
     patch_environment = Environment(
