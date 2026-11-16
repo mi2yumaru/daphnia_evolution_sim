@@ -14,6 +14,20 @@ except ImportError:
     from spatial import wrap_coordinate, manhattan_distance
 
 
+# Immutable direction vectors: reused across all movement decisions.
+# The order is part of the RNG contract for np.random.choice.
+_MOORE_DIRECTIONS = (
+    (-1, -1), (-1, 0), (-1, 1),
+    (0, -1),           (0, 1),
+    (1, -1),  (1, 0),  (1, 1),
+)
+_VON_NEUMANN_DIRECTIONS = (
+    (-1, 0),
+    (0, -1), (0, 1),
+    (1, 0),
+)
+
+
 class Organism:
     """
     個体を表現するクラス
@@ -231,17 +245,9 @@ class Organism:
         old_y = self.y
 
         if move_type == "moore":
-            directions = [
-                (-1, -1), (-1, 0), (-1, 1),
-                (0, -1),           (0, 1),
-                (1, -1),  (1, 0),  (1, 1)
-            ]
+            directions = _MOORE_DIRECTIONS
         elif move_type == "von_neumann":
-            directions = [
-                (-1, 0),
-                (0, -1), (0, 1),
-                (1, 0)
-            ]
+            directions = _VON_NEUMANN_DIRECTIONS
         else:
             raise ValueError(f"Unknown move_type: {move_type}")
 
@@ -261,6 +267,9 @@ class Organism:
 
         # 候補: (0, 0) は「移動しない」
         candidates = [(0, 0)]
+        # Cache the destination paired with each direction (including stay).
+        # The order exactly matches the candidate list used by np.random.choice.
+        candidate_targets = [(self.x, self.y)]
 
         # 有限境界では範囲外の方向を除外する。
         # 周期境界では全方向を許可し、小さいグリッドで同じ
@@ -275,6 +284,7 @@ class Organism:
                 continue
             seen_targets.add((target_x, target_y))
             candidates.append((dx, dy))
+            candidate_targets.append((target_x, target_y))
 
         # もし動ける方向がない場合は移動しない
         if len(candidates) == 1:
@@ -316,10 +326,19 @@ class Organism:
             and self.last_food_step + memory_steps >= behavior_config.get("current_step", 0)
         )
 
+        # All directions share the same current position and memory target;
+        # compute this once instead of up to 8 times per organism.
+        distance_before = None
+        if use_site_memory:
+            distance_before = manhattan_distance(
+                self.last_food_position, (self.x, self.y),
+                width, height, periodic_boundary,
+            )
+
         weights = []
         move_candidate_count = len(candidates) - 1
 
-        for dx, dy in candidates:
+        for (dx, dy), (target_x, target_y) in zip(candidates, candidate_targets):
             # stay: 移動しない
             if dx == 0 and dy == 0:
                 # exploration_tendency が低いほど stay が強くなる
@@ -340,16 +359,6 @@ class Organism:
 
                 # 最後に餌を食べた場所へ近づく方向を少し優遇
                 if use_site_memory and self.last_food_position is not None:
-                    target_x = wrap_coordinate(
-                        self.x + dx, width, periodic_boundary
-                    )
-                    target_y = wrap_coordinate(
-                        self.y + dy, height, periodic_boundary
-                    )
-                    distance_before = manhattan_distance(
-                        self.last_food_position, (self.x, self.y),
-                        width, height, periodic_boundary,
-                    )
                     distance_after = manhattan_distance(
                         self.last_food_position, (target_x, target_y),
                         width, height, periodic_boundary,
@@ -362,10 +371,11 @@ class Organism:
 
         weights = np.array(weights, dtype=float)
 
-        if weights.sum() <= 0.0:
+        weight_sum = weights.sum()
+        if weight_sum <= 0.0:
             dx, dy = 0, 0
         else:
-            probabilities = weights / weights.sum()
+            probabilities = weights / weight_sum
             choice = np.random.choice(len(candidates), p=probabilities)
             dx, dy = candidates[choice]
 
