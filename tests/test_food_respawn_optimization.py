@@ -198,7 +198,7 @@ def test_cached_geometry_list_is_not_mutable_by_callers() -> None:
 
 
 @pytest.mark.parametrize("config_name", ["default.yaml", "patch16.yaml"])
-def test_short_simulation_matches_reference_respan(
+def test_short_simulation_matches_reference_respawn(
     config_name: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     root = Path(__file__).resolve().parents[1]
