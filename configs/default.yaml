@@ -32,7 +32,7 @@ environment:
   periodic_boundary: true  # true: 周期境界、false: 非周期境界
   mode: "patch"             # 標準は4パッチ。ランダム環境は mode: "random"
   patch_layout: "spread"    # "random" | "radial" | "spread"  # patch_centersを指定した場合は使用されない
-  # 周期境界を見据えた4パッチ配置（実装は現時点では非周期）
+  # 周期境界の4パッチ配置（2×2等間隔）
   patch_count: 4
   patch_radius: 7.0
   patch_radius_mode: "exact"  # dx^2 + dy^2 <= patch_radius^2
@@ -79,8 +79,13 @@ organism:
   # STEP3_CONTROLLED_INITIAL_PLACEMENT_V1
   initial_placement_mode: "uniform"  # uniform / inside / near / far
   paired_initialization: true  # STEP4: keep founder positions/genomes fixed across environments
-  initial_placement_near_max_distance: 3.0  # outside patch; 0 < distance <= 3
-  initial_placement_far_min_distance: 15.0  # outside patch; distance >= 15
+  # near/farをパッチ中心間の最短周期距離Lから決定（inside/uniformは影響なし）
+  initial_placement_distance_mode: "relative"  # "relative" or "absolute"
+  initial_placement_near_fraction: 0.2           # near: 最寄りパッチ領域から L/5 以内
+  initial_placement_far_fraction: 0.4            # far: 最寄りパッチ領域から 0.4L 以上
+  # absoluteモードのときだけ使用する従来の固定距離
+  initial_placement_near_max_distance: 3.0
+  initial_placement_far_min_distance: 15.0
   initial_energy: 10
   move_cost: 0.5
   living_cost: 0.3
