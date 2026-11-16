@@ -184,7 +184,29 @@ environment:
 
 **今回から標準の4パッチ・16パッチ条件は周期境界です。** 境界をまたいだ円形パッチも正しく折り返すよう実装しました。新しい配置では1パッチあたり149/37マス、総面積596/592マスで、個々のパッチは重複しません。
 
-初期配置の `near`・`far` で用いる距離も周期距離に対応しました。ただし、**閾値の相対距離化は次段階**で対応します。現時点の既定値（near=3、far=15）はそのままなので、16パッチ条件の `far` は候補がなくなる場合があります。現在の `uniform` 初期配置には影響しません。
+初期配置の `near`・`far` は周期距離で判定します。標準の4パッチ・16パッチでは、パッチ中心間の最短周期ユークリッド距離 `L` に応じて閾値を自動設定する `relative` モードを採用します。
+
+```yaml
+organism:
+  initial_placement_mode: "uniform"  # uniform / inside / near / far
+  initial_placement_distance_mode: "relative"
+  initial_placement_near_fraction: 0.2
+  initial_placement_far_fraction: 0.4
+```
+
+- near: パッチ領域外で、最も近いパッチ**領域のマス**までの距離が `0 < d <= L/5`
+- far: パッチ領域外で、最も近いパッチ**領域のマス**までの距離が `d >= 0.4L`
+- inside: パッチ領域内
+- uniform: マップ全体の一様初期配置。near/farの閾値に影響されません
+
+| 環境 | 中心間の最短周期距離L | near閾値 | far閾値 | near候補 | far候補 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 4パッチ | 50 | 10 | 20 | 2,928マス | 1,428マス |
+| 16パッチ | 25 | 5 | 10 | 2,816マス | 1,600マス |
+
+中心間の距離は**閾値のスケールを決めるためだけ**に使い、実際に配置可能かどうかは最も近いパッチ領域のセルから測った周期ユークリッド距離で判定します。4パッチと16パッチでは同じ相対距離基準を使いますが、餌への絶対距離が一致するわけではありません。
+
+過去の設定を再現するには、`initial_placement_distance_mode: fixed`（またはキー省略）を使用し、`initial_placement_near_max_distance` と `initial_placement_far_min_distance` に固定値を指定します。過去の `step4_*.yaml` の固定距離設定と旧境界条件は変更しません。
 
 過去の9・25パッチ比較用の `step4_*.yaml` は非周期・旧半径計算法のまま保存しており、過去データの再現用です。新しい比較では `configs/random_periodic.yaml`、`configs/default.yaml`（4パッチ）、`configs/patch16.yaml`（16パッチ）を使ってください。
 
