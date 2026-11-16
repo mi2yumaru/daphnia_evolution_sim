@@ -123,7 +123,8 @@ def initial_placement_candidates(
 
     Distance is measured to the *nearest cell of the patch region*, not to
     the patch center. When periodic_boundary=True, distance is toroidal.
-    Near/far thresholds are unchanged; relative-threshold tuning comes later.
+    Thresholds are passed by the caller, using either fixed distances or
+    distances resolved from the minimum patch-center separation.
     Near and far are non-overlapping if far_min > near_max.
     """
     if mode not in {"inside", "near", "far"}:
