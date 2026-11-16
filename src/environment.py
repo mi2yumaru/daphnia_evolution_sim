@@ -35,10 +35,11 @@ class Environment:
         # legacy: integer radius r with (r + 0.5) distance threshold.
         # exact: radius is the literal Euclidean threshold, including fractions.
         # Default stays legacy to preserve archived 9/25 patch experiments.
-        self.patch_radius = max(0.0, float(patch_radius))
-        self.patch_radius_mode = str(patch_radius_mode)
-        if not math.isfinite(self.patch_radius):
+        raw_radius = float(patch_radius)
+        if not math.isfinite(raw_radius):
             raise ValueError("patch_radius must be finite")
+        self.patch_radius = max(0.0, raw_radius)
+        self.patch_radius_mode = str(patch_radius_mode)
         if self.patch_radius_mode not in {"legacy", "exact"}:
             raise ValueError(
                 "patch_radius_mode must be 'legacy' or 'exact'"
