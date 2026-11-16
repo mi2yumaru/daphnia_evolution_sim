@@ -8,6 +8,11 @@ from typing import Set, Tuple, List, Optional
 import math
 import numpy as np
 
+try:
+    from .spatial import wrap_coordinate, squared_euclidean_distance
+except ImportError:
+    from spatial import wrap_coordinate, squared_euclidean_distance
+
 
 class Environment:
     def __init__(
@@ -25,9 +30,13 @@ class Environment:
         patch_spread_use_corners: bool = True,
         patch_spread_step: int = 0,
         patch_radius_mode: str = "legacy",
+        periodic_boundary: bool = False,
     ) -> None:
         self.width = int(width)
         self.height = int(height)
+        if self.width <= 0 or self.height <= 0:
+            raise ValueError("Grid dimensions must be positive")
+        self.periodic_boundary = bool(periodic_boundary)
         self.food: Set[Tuple[int, int]] = set()
 
         self.respawn_mode = str(respawn_mode)
@@ -109,8 +118,12 @@ class Environment:
         if self._explicit_patch_centers:
             centers = []
             for x, y in self._explicit_patch_centers:
-                cx = max(0, min(self.width - 1, int(x)))
-                cy = max(0, min(self.height - 1, int(y)))
+                if self.periodic_boundary:
+                    cx = int(x) % self.width
+                    cy = int(y) % self.height
+                else:
+                    cx = max(0, min(self.width - 1, int(x)))
+                    cy = max(0, min(self.height - 1, int(y)))
                 centers.append((cx, cy))
             self.patch_centers = centers[: self.patch_count]
             return
@@ -127,8 +140,12 @@ class Environment:
                 theta = 2.0 * math.pi * i / n
                 x = int(round(midx + base_radius * math.cos(theta)))
                 y = int(round(midy + base_radius * math.sin(theta)))
-                x = max(0, min(self.width - 1, x))
-                y = max(0, min(self.height - 1, y))
+                if self.periodic_boundary:
+                    x %= self.width
+                    y %= self.height
+                else:
+                    x = max(0, min(self.width - 1, x))
+                    y = max(0, min(self.height - 1, y))
                 centers.append((x, y))
             self.patch_centers = centers
             return
@@ -137,7 +154,9 @@ class Environment:
             step = self.patch_spread_step if self.patch_spread_step > 0 else max(1, min(self.width, self.height) // 40)
             candidates = [(x, y) for x in range(0, self.width, step) for y in range(0, self.height, step)]
             existing: List[Tuple[int, int]] = []
-            if self.patch_spread_use_corners:
+            if self.patch_spread_use_corners and not self.periodic_boundary:
+                # In a torus all four corners are adjacent, so they must
+                # not be treated as four distinct fixed reference points.
                 existing.extend([(0, 0), (0, self.height - 1), (self.width - 1, 0), (self.width - 1, self.height - 1)])
 
             centers: List[Tuple[int, int]] = []
@@ -145,8 +164,13 @@ class Environment:
             def min_dist2(pt, pts):
                 if not pts:
                     return float("inf")
-                x0, y0 = pt
-                return min((x0 - x1) ** 2 + (y0 - y1) ** 2 for x1, y1 in pts)
+                return min(
+                    squared_euclidean_distance(
+                        pt, other, self.width, self.height,
+                        self.periodic_boundary,
+                    )
+                    for other in pts
+                )
 
             for _ in range(n):
                 best = None
@@ -173,13 +197,10 @@ class Environment:
         self.patch_centers = [(np.random.randint(0, self.width), np.random.randint(0, self.height)) for _ in range(n)]
 
     def _get_patch_cells(self) -> List[Tuple[int, int]]:
-        """Return unique cells within each patch's Euclidean radius.
+        """Unique circular patch cells, wrapping across edges when periodic.
 
-        Exact mode uses patch_radius directly (7.0 -> 149 cells,
-        3.2 -> 37 cells in an unobstructed circular patch).
-        Legacy mode preserves the prior integer-radius + 0.5 rule.
-        This method still clips at map edges; periodic boundaries
-        are a separate follow-up change.
+        exact: dx² + dy² <= patch_radius² (fractional radii supported).
+        legacy: dx² + dy² <= (patch_radius + 0.5)², as before.
         """
         cells: Set[Tuple[int, int]] = set()
         if not self.patch_centers:
@@ -194,25 +215,43 @@ class Environment:
         extent = math.ceil(effective_radius)
 
         for cx, cy in self.patch_centers:
-            x0 = max(0, cx - extent)
-            x1 = min(self.width - 1, cx + extent)
-            y0 = max(0, cy - extent)
-            y1 = min(self.height - 1, cy + extent)
-            for x in range(x0, x1 + 1):
-                dx2 = (x - cx) * (x - cx)
-                for y in range(y0, y1 + 1):
-                    dy2 = (y - cy) * (y - cy)
-                    if dx2 + dy2 <= radius_sq:
-                        cells.add((x, y))
+            # On a torus each candidate cell is normalized modulo dimensions.
+            # This also correctly handles circles centered on an edge.
+            if self.periodic_boundary:
+                for dx in range(-extent, extent + 1):
+                    for dy in range(-extent, extent + 1):
+                        if dx * dx + dy * dy <= radius_sq:
+                            cells.add((
+                                (cx + dx) % self.width,
+                                (cy + dy) % self.height,
+                            ))
+            else:
+                x0 = max(0, cx - extent)
+                x1 = min(self.width - 1, cx + extent)
+                y0 = max(0, cy - extent)
+                y1 = min(self.height - 1, cy + extent)
+                for x in range(x0, x1 + 1):
+                    dx2 = (x - cx) * (x - cx)
+                    for y in range(y0, y1 + 1):
+                        dy2 = (y - cy) * (y - cy)
+                        if dx2 + dy2 <= radius_sq:
+                            cells.add((x, y))
 
         return list(cells)
 
     def has_food(self, x: int, y: int) -> bool:
-        return (x, y) in self.food
+        pos = (
+            wrap_coordinate(x, self.width, self.periodic_boundary),
+            wrap_coordinate(y, self.height, self.periodic_boundary),
+        )
+        return pos in self.food
 
     def remove_food(self, x: int, y: int) -> None:
         # Count only an actual deletion, once per food cell (not per consumer).
-        pos = (x, y)
+        pos = (
+            wrap_coordinate(x, self.width, self.periodic_boundary),
+            wrap_coordinate(y, self.height, self.periodic_boundary),
+        )
         if self.respawn_mode == "patch" and pos in self.food:
             if self._food_flow_patch_cells is None:
                 raise RuntimeError("Missing cached patch cells for food-flow tracking")
