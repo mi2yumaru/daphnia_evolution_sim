@@ -9,6 +9,11 @@ from __future__ import annotations
 import math
 from typing import Collection
 
+try:
+    from .spatial import squared_euclidean_distance
+except ImportError:
+    from spatial import squared_euclidean_distance
+
 
 def initial_placement_candidates(
     width: int,
@@ -17,6 +22,7 @@ def initial_placement_candidates(
     mode: str,
     near_max_distance: float = 3.0,
     far_min_distance: float = 15.0,
+    periodic_boundary: bool = False,
 ) -> list[tuple[int, int]]:
     """Return eligible cells, sorted by x then y.
 
@@ -25,7 +31,9 @@ def initial_placement_candidates(
     far:          outside patch, with distance >= far_min_distance
 
     Distance is measured to the *nearest cell of the patch region*, not to
-    the patch center. Near and far are non-overlapping if far_min > near_max.
+    the patch center. When periodic_boundary=True, distance is toroidal.
+    Near/far thresholds are unchanged; relative-threshold tuning comes later.
+    Near and far are non-overlapping if far_min > near_max.
     """
     if mode not in {"inside", "near", "far"}:
         raise ValueError("initial placement mode must be inside, near or far")
@@ -54,7 +62,9 @@ def initial_placement_candidates(
             if (x, y) in patches:
                 continue
             distance2 = min(
-                (x - px) ** 2 + (y - py) ** 2
+                squared_euclidean_distance(
+                    (x, y), (px, py), width, height, periodic_boundary
+                )
                 for px, py in patch_locations
             )
             if mode == "near" and 0 < distance2 <= near2:
