@@ -66,6 +66,10 @@ class Environment:
             self._explicit_patch_centers = [(int(x), int(y)) for x, y in patch_centers_config]
 
         self.patch_centers: List[Tuple[int, int]] = []
+        # Patch geometry is fixed for the lifetime of an experiment. Keep
+        # the original list(set(...)) order for np.random.choice indexing.
+        # Return copies so callers cannot mutate the cached candidate order.
+        self._patch_cells_cache: Optional[List[Tuple[int, int]]] = None
 
         # FOOD_FLOW_LOGGING_V1: passive observation only; no random draws.
         self._food_flow_patch_cells: Optional[Set[Tuple[int, int]]] = None
@@ -202,6 +206,9 @@ class Environment:
         exact: dx² + dy² <= patch_radius² (fractional radii supported).
         legacy: dx² + dy² <= (patch_radius + 0.5)², as before.
         """
+        if self._patch_cells_cache is not None:
+            return list(self._patch_cells_cache)
+
         cells: Set[Tuple[int, int]] = set()
         if not self.patch_centers:
             return []
@@ -237,7 +244,8 @@ class Environment:
                         if dx2 + dy2 <= radius_sq:
                             cells.add((x, y))
 
-        return list(cells)
+        self._patch_cells_cache = list(cells)
+        return list(self._patch_cells_cache)
 
     def has_food(self, x: int, y: int) -> bool:
         pos = (
@@ -276,6 +284,7 @@ class Environment:
             patch_cells = self._get_patch_cells()
             if self._food_flow_patch_cells is None:
                 self._food_flow_patch_cells = set(patch_cells)
+            patch_cell_set = self._food_flow_patch_cells
             empty_patch = [p for p in patch_cells if p not in self.food]
 
             outside_frac = max(0.0, min(1.0, self.outside_respawn_fraction))
@@ -297,7 +306,7 @@ class Environment:
                     (x, y)
                     for x in range(self.width)
                     for y in range(self.height)
-                    if (x, y) not in self.food and (x, y) not in patch_cells
+                    if (x, y) not in self.food and (x, y) not in patch_cell_set
                 ]
                 if empty_outside:
                     add_out = min(outside_target, len(empty_outside))
