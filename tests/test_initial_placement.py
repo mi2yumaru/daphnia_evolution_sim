@@ -35,6 +35,7 @@ def test_founders_position_only_changes_with_same_seed():
     base["environment"]["patch_count"] = 9
     base["environment"]["patch_radius"] = 5
     base["environment"]["patch_radius_mode"] = "legacy"
+    base["organism"]["initial_placement_distance_mode"] = "absolute"  # archived fixed near/far
     base["environment"]["periodic_boundary"] = False  # archived finite-boundary geometry
     base["environment"]["patch_centers"] = [
         [x, y]
