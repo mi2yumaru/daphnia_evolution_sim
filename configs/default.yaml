@@ -2,12 +2,12 @@ simulation:
   # 実行期間の指定方法
   # "steps": stepsで直接指定
   # "years": duration_yearsから総ステップ数を自動計算
-  duration_mode: "steps"
+  duration_mode: "years"
 
   # duration_modeが"steps"のときに使用
   steps: 100
   # duration_modeが"years"のときに使用
-  duration_years: 3
+  duration_years: 5
   days_per_year: 365
   steps_per_day: 10
 
