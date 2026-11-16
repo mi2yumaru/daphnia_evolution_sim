@@ -12,9 +12,15 @@ import numpy as np
 
 # STEP3_CONTROLLED_INITIAL_PLACEMENT_V1
 try:
-    from .initial_placement import initial_placement_candidates
+    from .initial_placement import (
+        initial_placement_candidates,
+        resolve_initial_placement_distances,
+    )
 except ImportError:
-    from initial_placement import initial_placement_candidates
+    from initial_placement import (
+        initial_placement_candidates,
+        resolve_initial_placement_distances,
+    )
 
 # STEP2_GENETIC_DIVERSITY_V1: 遺伝的多様性の算出
 try:
@@ -342,18 +348,40 @@ class Simulation:
         if initial_placement_mode != "uniform":
             if self.environment.respawn_mode != "patch":
                 raise ValueError("inside/near/far placement requires environment.mode='patch'")
+            # With no initial food the patch geometry must still be initialized.
+            self.environment._init_patch_regions()
             patch_cells = set(self.environment._get_patch_cells())
+            near_distance = float(org_config.get(
+                "initial_placement_near_max_distance", 3.0
+            ))
+            far_distance = float(org_config.get(
+                "initial_placement_far_min_distance", 15.0
+            ))
+            if initial_placement_mode in {"near", "far"}:
+                near_distance, far_distance = resolve_initial_placement_distances(
+                    self.environment.width,
+                    self.environment.height,
+                    self.environment.patch_centers,
+                    periodic_boundary=self.periodic_boundary,
+                    distance_mode=str(org_config.get(
+                        "initial_placement_distance_mode", "absolute"
+                    )),
+                    near_max_distance=near_distance,
+                    far_min_distance=far_distance,
+                    near_fraction=float(org_config.get(
+                        "initial_placement_near_fraction", 0.2
+                    )),
+                    far_fraction=float(org_config.get(
+                        "initial_placement_far_fraction", 0.4
+                    )),
+                )
             initial_placement_candidates_list = initial_placement_candidates(
                 self.environment.width,
                 self.environment.height,
                 patch_cells,
                 initial_placement_mode,
-                near_max_distance=float(org_config.get(
-                    "initial_placement_near_max_distance", 3.0
-                )),
-                far_min_distance=float(org_config.get(
-                    "initial_placement_far_min_distance", 15.0
-                )),
+                near_max_distance=near_distance,
+                far_min_distance=far_distance,
                 periodic_boundary=self.periodic_boundary,
             )
             if not initial_placement_candidates_list:
