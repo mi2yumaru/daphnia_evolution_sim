@@ -30,7 +30,7 @@ environment:
   width: 100
   height: 100
   periodic_boundary: true  # true: 周期境界、false: 非周期境界
-  mode: "random"             # 標準は4パッチ。ランダム環境は mode: "random"
+  mode: "random"            # 周期境界を使うランダム餌環境
   patch_layout: "spread"    # "random" | "radial" | "spread"  # patch_centersを指定した場合は使用されない
   # 周期境界を見据えた4パッチ配置（実装は現時点では非周期）
   patch_count: 4
