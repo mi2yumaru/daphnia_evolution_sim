@@ -34,6 +34,7 @@ def test_founders_position_only_changes_with_same_seed():
     # STEP3のテスト用に9パッチ環境を固定
     base["environment"]["patch_count"] = 9
     base["environment"]["patch_radius"] = 5
+    base["environment"]["patch_radius_mode"] = "legacy"
     base["environment"]["patch_centers"] = [
         [x, y]
         for x in (1, 49, 98)

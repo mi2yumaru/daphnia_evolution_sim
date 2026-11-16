@@ -209,6 +209,7 @@ class Simulation:
             respawn_mode=env_config.get("mode", "random"),
             patch_count=env_config.get("patch_count", 4),
             patch_radius=env_config.get("patch_radius", 5),
+            patch_radius_mode=env_config.get("patch_radius_mode", "legacy"),
             patch_density=env_config.get("patch_density", 0.8),
             outside_respawn_fraction=env_config.get("outside_respawn_fraction", 0.05),
             patch_layout=env_config.get("patch_layout", "random"),

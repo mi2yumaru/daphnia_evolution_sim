@@ -16,6 +16,8 @@ import numpy as np
 import pandas as pd
 import yaml
 
+from src.environment import Environment
+
 REQUIRED = {
     "organism_id", "parent_id", "founder_id", "birth_step",
     "birth_x", "birth_y", "death_step",
@@ -38,17 +40,24 @@ def build_patch_cells(env: dict) -> set[tuple[int, int]]:
     n = int(env.get("patch_count", len(centers)))
     if len(centers) < n:
         raise ValueError("patch_centers has fewer centers than patch_count")
-    width, height, radius = int(env["width"]), int(env["height"]), int(env["patch_radius"])
-    r2 = (radius + 0.5) ** 2
-    result = set()
-    for raw_cx, raw_cy in centers[:n]:
-        cx, cy = int(raw_cx), int(raw_cy)
-        if not (0 <= cx < width and 0 <= cy < height):
-            raise ValueError(f"Invalid center {(cx, cy)}")
-        for x in range(max(0, cx-radius), min(width-1, cx+radius)+1):
-            for y in range(max(0, cy-radius), min(height-1, cy+radius)+1):
-                if (x-cx)**2 + (y-cy)**2 <= r2:
-                    result.add((x, y))
+    width, height = int(env["width"]), int(env["height"])
+    for raw_x, raw_y in centers[:n]:
+        x, y = int(raw_x), int(raw_y)
+        if not (0 <= x < width and 0 <= y < height):
+            raise ValueError(f"Invalid center {(x, y)}")
+    # Use the same geometry as the simulator, including exact fractional
+    # radii and the historical integer radius + 0.5 convention.
+    patch_environment = Environment(
+        width=width,
+        height=height,
+        respawn_mode="patch",
+        patch_count=n,
+        patch_radius=float(env["patch_radius"]),
+        patch_radius_mode=env.get("patch_radius_mode", "legacy"),
+        patch_centers_config=centers,
+    )
+    patch_environment._init_patch_regions()
+    result = set(patch_environment._get_patch_cells())
     if len(result) in (0, width*height):
         raise ValueError("No patch/outside cells available")
     return result

@@ -16,7 +16,7 @@ class Environment:
         height: int,
         respawn_mode: str = "random",
         patch_count: int = 4,
-        patch_radius: int = 5,
+        patch_radius: float = 5,
         patch_density: float = 0.8,
         outside_respawn_fraction: float = 0.05,
         patch_layout: str = "random",
@@ -24,6 +24,7 @@ class Environment:
         patch_radial_fraction: float = 0.25,
         patch_spread_use_corners: bool = True,
         patch_spread_step: int = 0,
+        patch_radius_mode: str = "legacy",
     ) -> None:
         self.width = int(width)
         self.height = int(height)
@@ -31,7 +32,18 @@ class Environment:
 
         self.respawn_mode = str(respawn_mode)
         self.patch_count = max(1, int(patch_count))
-        self.patch_radius = max(0, int(patch_radius))
+        # legacy: integer radius r with (r + 0.5) distance threshold.
+        # exact: radius is the literal Euclidean threshold, including fractions.
+        # Default stays legacy to preserve archived 9/25 patch experiments.
+        raw_radius = float(patch_radius)
+        if not math.isfinite(raw_radius):
+            raise ValueError("patch_radius must be finite")
+        self.patch_radius = max(0.0, raw_radius)
+        self.patch_radius_mode = str(patch_radius_mode)
+        if self.patch_radius_mode not in {"legacy", "exact"}:
+            raise ValueError(
+                "patch_radius_mode must be 'legacy' or 'exact'"
+            )
         self.patch_density = float(patch_density)
         self.outside_respawn_fraction = float(outside_respawn_fraction)
         self.patch_layout = str(patch_layout)
@@ -161,24 +173,39 @@ class Environment:
         self.patch_centers = [(np.random.randint(0, self.width), np.random.randint(0, self.height)) for _ in range(n)]
 
     def _get_patch_cells(self) -> List[Tuple[int, int]]:
-        cells: List[Tuple[int, int]] = []
+        """Return unique cells within each patch's Euclidean radius.
+
+        Exact mode uses patch_radius directly (7.0 -> 149 cells,
+        3.2 -> 37 cells in an unobstructed circular patch).
+        Legacy mode preserves the prior integer-radius + 0.5 rule.
+        This method still clips at map edges; periodic boundaries
+        are a separate follow-up change.
+        """
+        cells: Set[Tuple[int, int]] = set()
         if not self.patch_centers:
-            return cells
-        r_adj = self.patch_radius + 0.5
-        r2 = r_adj * r_adj
+            return []
+
+        effective_radius = (
+            self.patch_radius
+            if self.patch_radius_mode == "exact"
+            else self.patch_radius + 0.5
+        )
+        radius_sq = effective_radius * effective_radius
+        extent = math.ceil(effective_radius)
+
         for cx, cy in self.patch_centers:
-            x0 = max(0, int(cx - self.patch_radius))
-            x1 = min(self.width - 1, int(cx + self.patch_radius))
-            y0 = max(0, int(cy - self.patch_radius))
-            y1 = min(self.height - 1, int(cy + self.patch_radius))
+            x0 = max(0, cx - extent)
+            x1 = min(self.width - 1, cx + extent)
+            y0 = max(0, cy - extent)
+            y1 = min(self.height - 1, cy + extent)
             for x in range(x0, x1 + 1):
                 dx2 = (x - cx) * (x - cx)
                 for y in range(y0, y1 + 1):
                     dy2 = (y - cy) * (y - cy)
-                    if dx2 + dy2 <= r2:
-                        cells.append((x, y))
-        # deduplicate
-        return list(set(cells))
+                    if dx2 + dy2 <= radius_sq:
+                        cells.add((x, y))
+
+        return list(cells)
 
     def has_food(self, x: int, y: int) -> bool:
         return (x, y) in self.food

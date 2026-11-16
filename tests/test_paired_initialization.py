@@ -20,6 +20,8 @@ def config_for(kind: str, seed: int) -> dict:
     c["organism"]["paired_initialization"] = True
     c["organism"]["initial_placement_mode"] = "uniform"
     env = c["environment"]
+    # Reproduce the archived 9/25-patch radius + 0.5 convention.
+    env["patch_radius_mode"] = "legacy"
     if kind == "random":
         env["mode"] = "random"
     elif kind == "patch9":

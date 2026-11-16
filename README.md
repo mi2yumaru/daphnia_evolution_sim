@@ -160,6 +160,28 @@ environment:
 
 パッチ数、半径、密度なども設定ファイルから変更できます。
 
+#### 標準4パッチと予備実験用16パッチ
+
+新しいパッチ比較では、同じ100×100マス・初期餌500個を維持し、パッチの個数と空間的分散を変更します。
+
+| 設定 | パッチ数 | 実効半径 | 中心座標（XとYの全組合せ） | 1パッチ面積 | 総面積 |
+| --- | ---: | ---: | --- | ---: | ---: |
+| `configs/default.yaml` | 4 | 7.0 | 25, 75 | 149 | 596 |
+| `configs/patch16.yaml` | 16 | 3.2 | 12, 37, 62, 87 | 37 | 592 |
+
+両条件では、`environment.mode: patch` と `environment.patch_radius_mode: exact` を使用します。`exact` はマス中心からの距離について `dx² + dy² <= patch_radius²` で領域を判定します。小数半径も指定できます。
+
+過去の `configs/step4_patch9.yaml` と `configs/step4_patch25.yaml` は変更していません。`patch_radius_mode` を省略した既存設定は旧実装どおり、`patch_radius + 0.5` の判定を適用します（`legacy` モード）。
+
+**現段階では周期境界は未導入です。** 新しい中心座標は将来の周期境界を考慮して間隔を決めていますが、移動・餌認識・子個体配置・遺伝子提供候補探索・初期配置の距離判定は引き続き非周期です。周期境界導入後に、パッチの分離と面積を再検証します。
+
+16パッチを指定する場合の実行例：
+
+```bash
+python src/run_experiments.py --config configs/patch16.yaml --seeds 0 1 2 --experiment-name pilot_patch16 --no-plots
+```
+
+
 ## 季節的な食料供給
 
 `seasonal_food.enabled` が `true` の場合、CSVファイルから1～365日分の食料再生成率を読み込みます。
