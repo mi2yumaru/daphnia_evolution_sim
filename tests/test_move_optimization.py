@@ -173,9 +173,10 @@ def run_steps(config: dict, n: int) -> tuple[Simulation, tuple]:
 
 
 @pytest.mark.parametrize(
+    # Historical step4 configs retain the old Manhattan-per-direction
+    # memory model and therefore must still exactly match the frozen code.
     "name", [
-        "default.yaml", "patch16.yaml",
-        "random_periodic.yaml", "step4_patch9.yaml",
+        "step4_random.yaml", "step4_patch9.yaml", "step4_patch25.yaml",
     ],
 )
 def test_full_simulation_same_seed_has_identical_outputs(
