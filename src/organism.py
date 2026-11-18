@@ -336,6 +336,12 @@ class Organism:
         )
         if memory_mode not in ("legacy_manhattan", "euclidean_inverse_total"):
             raise ValueError(f"Unknown site_memory_mode: {memory_mode}")
+        if memory_mode == "euclidean_inverse_total" and (
+            not math.isfinite(site_memory_weight) or site_memory_weight < 0.0
+        ):
+            raise ValueError(
+                "site_memory_weight must be a finite, non-negative total"
+            )
 
         distance_before = None
         memory_bonus_by_direction = {}
@@ -398,8 +404,8 @@ class Organism:
                 if (dx, dy) in food_directions:
                     weight += nearby_food_weight
 
-                # 新方式: 近づく候補へ合計0.2 * site_fidelityを
-                # 周期ユークリッド距離の逆数比で配分する。
+                # 新方式: 近づく候補へ合計
+                # site_memory_weight * site_fidelity を分配する。
                 # 旧方式: 近づく各方向へ従来の重みをそれぞれ付与する。
                 if memory_mode == "euclidean_inverse_total":
                     weight += memory_bonus_by_direction.get((dx, dy), 0.0)
