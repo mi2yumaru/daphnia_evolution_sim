@@ -718,6 +718,13 @@ Measure-Command {
 
 これは**意図的な行動モデルの変更**なので、既存の1000ステップ実験（`speed_after`、`move_after`）と新しい実験のCSVは一致しなくて正常です。再現性は「同じ新設定・同じseedで同じ結果になること」で検証してください。
 
+**注意：** 以前作成した `results/profile_config.yaml` は旧行動重みのスナップショットです。そのまま実行しても新方式にはなりません。新設定を1000ステップで試す場合は、次のように新しい短縮版設定を生成してください（既存の比較データは残します）。
+
+```powershell
+python -c "from pathlib import Path; import yaml; c=yaml.safe_load(Path('configs/default.yaml').read_text(encoding='utf-8')); c['simulation']['duration_mode']='steps'; c['simulation']['steps']=1000; Path('results').mkdir(exist_ok=True); Path('results/euclidean_1000.yaml').write_text(yaml.safe_dump(c,allow_unicode=True,sort_keys=False),encoding='utf-8')"
+python src/run_experiments.py --config results/euclidean_1000.yaml --seeds 0 --experiment-name euclidean_1000_seed0 --no-plots
+```
+
 ```powershell
 python -m pytest tests/test_euclidean_memory_weights.py -q
 python -m pytest tests/test_move_optimization.py tests/test_periodic_boundaries.py -q
