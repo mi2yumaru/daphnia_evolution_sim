@@ -884,6 +884,9 @@ class Simulation:
             "current_cell_food_weight": self.behavior_config.get("current_cell_food_weight", 8.0),
             "nearby_food_weight": self.behavior_config.get("nearby_food_weight", 4.0),
             "site_memory_weight": self.behavior_config.get("site_memory_weight", 2.0),
+            "site_memory_mode": self.behavior_config.get(
+                "site_memory_mode", "legacy_manhattan"
+            ),
             "current_step": self.current_step
         }
 
