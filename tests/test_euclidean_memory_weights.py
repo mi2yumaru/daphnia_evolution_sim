@@ -113,6 +113,21 @@ def test_total_memory_bonus_and_inverse_euclidean_ratios(
         assert np.count_nonzero(bonus) == 3
 
 
+
+def test_euclidean_closer_direction_not_manhattan_closer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # From (20,20) to (23,21), going (1,-1) decreases Euclidean
+    # distance sqrt(10) -> sqrt(8), while Manhattan stays at 4.
+    individual = agent(20, 20)
+    individual.last_food_position = (23, 21)
+    env = Environment(100, 100, periodic_boundary=False)
+    p = probabilities(individual, env, settings(), monkeypatch)
+    # Moore index 6 is direction (1,-1). It must receive a memory bonus.
+    baseline_move_weight = 0.5 / 8
+    assert p[6] > baseline_move_weight / 1.2
+
+
 def test_wrap_around_distance_selects_single_shortest_direction(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
