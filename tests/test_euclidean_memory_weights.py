@@ -231,3 +231,27 @@ def test_new_model_reproducible_for_same_seed(name: str) -> None:
         )
         np.testing.assert_array_equal(a.genome, b.genome)
         assert a.last_food_position == b.last_food_position
+
+
+@pytest.mark.parametrize("name", [
+    "default.yaml", "patch16.yaml", "random_periodic.yaml",
+])
+def test_simulation_passes_new_memory_mode_to_move(
+    name: str, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with (ROOT / "configs" / name).open(encoding="utf-8") as stream:
+        conf = yaml.safe_load(stream)
+    sim = Simulation(conf)
+    observed_modes = set()
+    original_move = Organism.move
+
+    def inspecting_move(self, *args, **kwargs):
+        # Simulation.step passes (width, height, move_type, environment,
+        # low_energy, behavior_settings) as positional arguments.
+        observed_modes.add(args[5]["site_memory_mode"])
+        return original_move(self, *args, **kwargs)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(Organism, "move", inspecting_move)
+        sim.step()
+    assert observed_modes == {"euclidean_inverse_total"}
