@@ -188,6 +188,11 @@ def test_zero_memory_weight_and_invalid_mode(monkeypatch: pytest.MonkeyPatch) ->
             100, 100, "moore", env, False,
             settings(mode="unrecognized"), periodic_boundary=True,
         )
+    with pytest.raises(ValueError, match="site_memory_weight"):
+        individual.move(
+            100, 100, "moore", env, False,
+            settings(memory_weight=-0.1), periodic_boundary=True,
+        )
 
 
 @pytest.mark.parametrize("name", [
