@@ -78,13 +78,15 @@ behavior:
   site_memory_steps: 20
 
   # 自分のいるマスに餌があるとき、移動しない候補に加える重み
-  current_cell_food_weight: 8.0
+  current_cell_food_weight: 1.0
 
   # 周囲方向に餌があるとき、その方向に加える重み
-  nearby_food_weight: 4.0
+  nearby_food_weight: 0.5
 
   # 最後に餌を食べた場所へ近づく方向に加える重み
-  site_memory_weight: 2.0
+  # 固定総量を距離の逆数比で分配。旧方式はlegacy_manhattan
+  site_memory_mode: euclidean_inverse_total
+  site_memory_weight: 0.2
 
 organism:
   initial_population: 100

@@ -6,12 +6,13 @@ organism.py - 個体の定義
 """
 
 from typing import List, Optional, Tuple, Dict, Any
+import math
 import numpy as np
 
 try:
-    from .spatial import wrap_coordinate, manhattan_distance
+    from .spatial import wrap_coordinate, manhattan_distance, squared_euclidean_distance
 except ImportError:
-    from spatial import wrap_coordinate, manhattan_distance
+    from spatial import wrap_coordinate, manhattan_distance, squared_euclidean_distance
 
 
 # Immutable direction vectors: reused across all movement decisions.
@@ -326,14 +327,60 @@ class Organism:
             and self.last_food_step + memory_steps >= behavior_config.get("current_step", 0)
         )
 
-        # All directions share the same current position and memory target;
-        # compute this once instead of up to 8 times per organism.
+        # Keep historical experiments reproducible: the legacy mode gives
+        # each Manhattan-closer direction the full memory bonus. New
+        # experiments use a fixed TOTAL memory bonus distributed according
+        # to inverse periodic-Euclidean distance to the remembered cell.
+        memory_mode = behavior_config.get(
+            "site_memory_mode", "legacy_manhattan"
+        )
+        if memory_mode not in ("legacy_manhattan", "euclidean_inverse_total"):
+            raise ValueError(f"Unknown site_memory_mode: {memory_mode}")
+        if memory_mode == "euclidean_inverse_total" and (
+            not math.isfinite(site_memory_weight) or site_memory_weight < 0.0
+        ):
+            raise ValueError(
+                "site_memory_weight must be a finite, non-negative total"
+            )
+
         distance_before = None
-        if use_site_memory:
+        memory_bonus_by_direction = {}
+        if use_site_memory and memory_mode == "legacy_manhattan":
             distance_before = manhattan_distance(
                 self.last_food_position, (self.x, self.y),
                 width, height, periodic_boundary,
             )
+        elif (
+            use_site_memory
+            and memory_mode == "euclidean_inverse_total"
+            and site_memory_weight > 0.0
+            and self.phenotype["site_fidelity"] > 0.0
+        ):
+            distance_before_squared = squared_euclidean_distance(
+                self.last_food_position, (self.x, self.y),
+                width, height, periodic_boundary,
+            )
+            priorities = []
+            for direction, target in zip(candidates[1:], candidate_targets[1:]):
+                distance_after_squared = squared_euclidean_distance(
+                    self.last_food_position, target,
+                    width, height, periodic_boundary,
+                )
+                if distance_after_squared < distance_before_squared:
+                    # +1 keeps the inverse finite for a direct return
+                    # to the remembered food cell (distance = 0).
+                    priority = 1.0 / (1.0 + math.sqrt(distance_after_squared))
+                    priorities.append((direction, priority))
+
+            if priorities:
+                priority_sum = sum(priority for _, priority in priorities)
+                total_memory_bonus = (
+                    site_memory_weight * self.phenotype["site_fidelity"]
+                )
+                memory_bonus_by_direction = {
+                    direction: total_memory_bonus * priority / priority_sum
+                    for direction, priority in priorities
+                }
 
         weights = []
         move_candidate_count = len(candidates) - 1
@@ -357,8 +404,12 @@ class Organism:
                 if (dx, dy) in food_directions:
                     weight += nearby_food_weight
 
-                # 最後に餌を食べた場所へ近づく方向を少し優遇
-                if use_site_memory and self.last_food_position is not None:
+                # 新方式: 近づく候補へ合計
+                # site_memory_weight * site_fidelity を分配する。
+                # 旧方式: 近づく各方向へ従来の重みをそれぞれ付与する。
+                if memory_mode == "euclidean_inverse_total":
+                    weight += memory_bonus_by_direction.get((dx, dy), 0.0)
+                elif use_site_memory and self.last_food_position is not None:
                     distance_after = manhattan_distance(
                         self.last_food_position, (target_x, target_y),
                         width, height, periodic_boundary,

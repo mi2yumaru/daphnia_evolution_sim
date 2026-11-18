@@ -696,6 +696,41 @@ Measure-Command {
 
 `results/experiments/speed_after/` と `results/experiments/move_after/` に保存されたCSVを比較し、同じ出力になることを確認してからマージしてください。
 
+### 行動重みの調整と場所記憶の距離評価
+
+新しい比較条件（`configs/default.yaml`、`configs/patch16.yaml`、`configs/random_periodic.yaml`）では、行動に使う追加重みを次のように変更します。
+
+| 設定 | 従来値 | 新しい値 | 加算対象 |
+| --- | ---: | ---: | --- |
+| `current_cell_food_weight` | 8.0 | 1.0 | 現在のマスに餌がある場合の「停止」候補 |
+| `nearby_food_weight` | 4.0 | 0.5 | 餌が検知された**各方向** |
+| `site_memory_weight` | 2.0 | 0.2 | **記憶地点に近づく方向全体の合計** |
+
+`site_memory_mode: euclidean_inverse_total` は、周期境界を考慮したユークリッド距離を、**方向の選別と分配の両方**に用います。
+
+- 現在位置から記憶地点までの周期ユークリッド距離を `d_before`、候補方向へ1マス進んだ後の距離を `d_i` とします。`d_i < d_before` の方向だけを対象にします
+- 対象方向の優先度は `q_i = 1/(d_i + 1)` とし、合計 `site_memory_weight * site_fidelity` を `q_i / sum(q)` の比率で分配します
+- 記憶が無効・期限切れ、場所忠実度0、または近づける方向がない場合、記憶による重みは付けません。記憶地点上で「停止」を優遇する処理はありません
+- 元々の探索傾向の重みや餌による重みは従来通り加算し、最後に全候補の重みを正規化して移動方向を選択します
+- 縦横・斜めを等しい1ステップで移動できるMoore近傍では、ユークリッド距離は厳密な「最短必要ステップ数」ではなく、**空間的な近さ**を評価する尺度です
+
+旧実験の再現性のため、`site_memory_mode` を省略した場合は `legacy_manhattan`（従来の周期マンハッタン距離で、近づく各方向に`site_memory_weight * site_fidelity`を加算）を使います。旧実験用の `configs/step4_*.yaml` は**変更していません**。新しい設定を使う場合は `euclidean_inverse_total` を明示してください。
+
+これは**意図的な行動モデルの変更**なので、既存の1000ステップ実験（`speed_after`、`move_after`）と新しい実験のCSVは一致しなくて正常です。再現性は「同じ新設定・同じseedで同じ結果になること」で検証してください。
+
+**注意：** 以前作成した `results/profile_config.yaml` は旧行動重みのスナップショットです。そのまま実行しても新方式にはなりません。新設定を1000ステップで試す場合は、次のように新しい短縮版設定を生成してください（既存の比較データは残します）。
+
+```powershell
+python -c "from pathlib import Path; import yaml; c=yaml.safe_load(Path('configs/default.yaml').read_text(encoding='utf-8')); c['simulation']['duration_mode']='steps'; c['simulation']['steps']=1000; Path('results').mkdir(exist_ok=True); Path('results/euclidean_1000.yaml').write_text(yaml.safe_dump(c,allow_unicode=True,sort_keys=False),encoding='utf-8')"
+python src/run_experiments.py --config results/euclidean_1000.yaml --seeds 0 --experiment-name euclidean_1000_seed0 --no-plots
+```
+
+```powershell
+python -m pytest tests/test_euclidean_memory_weights.py -q
+python -m pytest tests/test_move_optimization.py tests/test_periodic_boundaries.py -q
+python -m pytest tests -q
+```
+
 ### ヘルプ
 
 ```bash
