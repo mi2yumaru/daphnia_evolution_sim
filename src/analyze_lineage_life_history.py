@@ -141,7 +141,12 @@ def analyze(path: Path, steps_per_day: int) -> dict:
                     parent_birth_step, parent_generation = parent_info
                     if generation != parent_generation + 1:
                         raise ValueError(f"{path}: invalid generation for {individual}")
-                    age_steps = birth_step - parent_birth_step
+                    # Founders are aged at the start of step 0; individuals
+                    # born later only begin aging on the following step.
+                    age_steps = (
+                        birth_step - parent_birth_step
+                        + (1 if parent_generation == 0 else 0)
+                    )
                     if age_steps < 0:
                         raise ValueError(f"{path}: child born before parent")
                     if parent_id not in first or age_steps < first[parent_id]:
@@ -232,6 +237,11 @@ def discover(repo: Path, include_long: bool) -> list[dict]:
                 raise FileNotFoundError(f"Missing config_used.yaml: {config_path}")
             with config_path.open(encoding="utf-8") as f:
                 config = yaml.safe_load(f)
+            if config.get("organism", {}).get("randomize_initial_age", False):
+                raise ValueError(
+                    f"{config_path}: random initial founder ages require a "
+                    "different estimator; initial age was not logged in lineage.csv"
+                )
             seed = int(path.parent.name.removeprefix("seed_"))
             result.append({
                 "dataset": kind,
