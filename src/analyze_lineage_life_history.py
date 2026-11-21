@@ -5,7 +5,7 @@ a second file pairs the 20 random-environment runs with patch counterparts.
 
 Usage from the repository root:
     python src/analyze_lineage_life_history.py --limit 2
-    python src/analyze_lineage_life_history.py
+    python src/analyze_lineage_life_history.py  # aggregates 6-12d first reproduction
     python src/analyze_lineage_life_history.py --include-long
 """
 from __future__ import annotations
@@ -36,6 +36,9 @@ METRICS = [
     "first_reproduction_median_days",
     "first_reproduction_p10_days",
     "first_reproduction_p90_days",
+    "first_reproduction_before_6d_frac",
+    "first_reproduction_6_to_12d_frac",
+    "first_reproduction_over_12d_frac",
     "first_reproduction_under_7d_frac",
     "first_reproduction_under_10d_frac",
     "first_reproduction_10_to_20d_frac",
@@ -180,11 +183,14 @@ def analyze(path: Path, steps_per_day: int) -> dict:
     if nparents:
         first_mean = statistics.fmean(all_first_days)
         first_std = statistics.stdev(all_first_days) if nparents > 1 else math.nan
+        before6 = sum(v < 6 for v in all_first_days) / nparents
+        between6and12 = sum(6 <= v <= 12 for v in all_first_days) / nparents
+        after12 = sum(v > 12 for v in all_first_days) / nparents
         under7 = sum(v < 7 for v in all_first_days) / nparents
         under10 = sum(v < 10 for v in all_first_days) / nparents
         between10and20 = sum(10 <= v <= 20 for v in all_first_days) / nparents
     else:
-        first_mean = first_std = under7 = under10 = between10and20 = math.nan
+        first_mean = first_std = before6 = between6and12 = after12 = under7 = under10 = between10and20 = math.nan
 
     return {
         "lineage_individuals": len(born),
@@ -198,6 +204,9 @@ def analyze(path: Path, steps_per_day: int) -> dict:
         "first_reproduction_median_days": number(percentile(all_first_days, 50)),
         "first_reproduction_p10_days": number(percentile(all_first_days, 10)),
         "first_reproduction_p90_days": number(percentile(all_first_days, 90)),
+        "first_reproduction_before_6d_frac": number(before6),
+        "first_reproduction_6_to_12d_frac": number(between6and12),
+        "first_reproduction_over_12d_frac": number(after12),
         "first_reproduction_under_7d_frac": number(under7),
         "first_reproduction_under_10d_frac": number(under10),
         "first_reproduction_10_to_20d_frac": number(between10and20),
@@ -329,6 +338,7 @@ def main() -> None:
             and int(previous.get("source_bytes", "-1")) == f["source_bytes"]
             and int(previous.get("source_mtime_ns", "-1")) == f["source_mtime_ns"]
             and previous.get("status") == "complete"
+            and previous.get("first_reproduction_6_to_12d_frac", "") not in ("", None)
         ):
             skipped += 1
             continue
