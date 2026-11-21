@@ -318,10 +318,12 @@ def main() -> None:
         save_comparisons(root, records)
         new_runs += 1
         rec = records[key]
+        ratio = rec["first_reproduction_6_to_12d_frac"]
+        ratio_label = f"{float(ratio)*100:.1f}%" if ratio != "" else "N/A"
         print(
             f"  DONE {elapsed:.1f}s | population={rec['final_population']} | "
             f"first-repro median={rec['first_reproduction_median_days']}d | "
-            f"6-12d={float(rec['first_reproduction_6_to_12d_frac'])*100:.1f}%",
+            f"6-12d={ratio_label}",
             flush=True,
         )
 
