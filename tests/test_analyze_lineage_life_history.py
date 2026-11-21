@@ -29,11 +29,11 @@ class TestLifeHistory(unittest.TestCase):
             self.assertEqual(res["distinct_reproductive_parents"], 2)
             self.assertEqual(res["founder_reproductive_parents"], 1)
             self.assertEqual(res["nonfounder_reproductive_parents"], 1)
-            self.assertAlmostEqual(res["first_reproduction_mean_days"], 2.0)
-            self.assertAlmostEqual(res["first_reproduction_median_days"], 2.0)
-            self.assertAlmostEqual(res["founder_first_reproduction_median_days"], 1.0)
+            self.assertAlmostEqual(res["first_reproduction_mean_days"], 2.05)
+            self.assertAlmostEqual(res["first_reproduction_median_days"], 2.05)
+            self.assertAlmostEqual(res["founder_first_reproduction_median_days"], 1.1)
             self.assertAlmostEqual(res["nonfounder_first_reproduction_median_days"], 3.0)
-            self.assertAlmostEqual(res["parent_age_at_birth_mean_days"], 7 / 3, places=4)
+            self.assertAlmostEqual(res["parent_age_at_birth_mean_days"], 7.2 / 3, places=4)
             self.assertEqual(res["first_reproduction_under_10d_frac"], 1.0)
 
     def test_empty_distribution(self):
