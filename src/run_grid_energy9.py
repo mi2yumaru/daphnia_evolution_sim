@@ -26,10 +26,16 @@ from pathlib import Path
 
 import yaml
 
-from analyze_lineage_life_history import METRICS as LIFE_METRICS
-from analyze_lineage_life_history import analyze as analyze_lineage
-from run_grid_search import FIELDNAMES as GRID_FIELDS
-from run_grid_search import case_name, compute_metrics, make_config
+try:
+    from src.analyze_lineage_life_history import METRICS as LIFE_METRICS
+    from src.analyze_lineage_life_history import analyze as analyze_lineage
+    from src.run_grid_search import FIELDNAMES as GRID_FIELDS
+    from src.run_grid_search import case_name, compute_metrics, make_config
+except ImportError:
+    from analyze_lineage_life_history import METRICS as LIFE_METRICS
+    from analyze_lineage_life_history import analyze as analyze_lineage
+    from run_grid_search import FIELDNAMES as GRID_FIELDS
+    from run_grid_search import case_name, compute_metrics, make_config
 
 EXPERIMENT = "grid_energy9_1y_seed0"
 BASE_PARAMS = (0.30, 1.00, 20, 10)
