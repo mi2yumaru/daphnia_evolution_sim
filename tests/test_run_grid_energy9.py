@@ -5,7 +5,7 @@ from pathlib import Path
 import yaml
 
 from src.run_grid_energy9 import (
-    BASE_PARAMS, CONDITIONS, ENERGIES, ENVIRONMENTS,
+    BASE_PARAMS, ENERGIES, ENVIRONMENTS,
     case_name_energy, conditions, make_energy_config, tasks,
 )
 
