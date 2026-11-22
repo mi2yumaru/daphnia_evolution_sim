@@ -386,7 +386,10 @@ def main() -> None:
             log.is_file() and lineage.is_file() and per_seed_summary.is_file()
         )
         old = records.get(key, {})
-        has_life_metrics = old.get("first_reproduction_6_to_12d_frac", "") != ""
+        # An extinct population may have zero reproductive parents, in which
+        # case age-fraction fields are legitimately blank; the parent-resolution
+        # counter is populated for every successfully analyzed lineage.
+        has_life_metrics = old.get("unresolved_parent_rows", "") != ""
         if (finished and old.get("status") == "complete"
                 and int(old.get("steps_logged", "0")) == TOTAL_STEPS
                 and has_life_metrics):
