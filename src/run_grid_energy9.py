@@ -8,6 +8,8 @@ From the repository root:
     python src/run_grid_energy9.py --list
     python src/run_grid_energy9.py --limit 2
     python src/run_grid_energy9.py
+    python src/run_grid_energy9.py --only-f4 --list # O5/F4 only, no run
+    python src/run_grid_energy9.py --only-f4        # 2 extra runs
 
 All original result directories and configs/default.yaml remain untouched.
 Only complete output is skipped on restart. For each run, raw log.csv and
@@ -40,6 +42,7 @@ except ImportError:
 EXPERIMENT = "grid_energy9_1y_seed0"
 BASE_PARAMS = (0.30, 1.00, 20, 10)
 ENERGIES = (3, 5, 7)
+EXTRA_CONDITION = (5, 4)  # optional targeted follow-up, not part of original 3x3
 ENVIRONMENTS = ("patch", "random")
 SEED = 0
 EXPECTED_STEPS = 3650
@@ -77,8 +80,14 @@ def conditions() -> list[tuple[int, int]]:
     return [(5, 5), *(pair for pair in pairs if pair != (5, 5))]
 
 
-def tasks() -> list[tuple[int, int, str]]:
-    return [(o, f, env) for o, f in conditions() for env in ENVIRONMENTS]
+def tasks(only_f4: bool = False) -> list[tuple[int, int, str]]:
+    pairs = [EXTRA_CONDITION] if only_f4 else conditions()
+    return [(o, f, env) for o, f in pairs for env in ENVIRONMENTS]
+
+
+def output_conditions() -> list[tuple[int, int]]:
+    """Always preserve any optional O5/F4 results in shared CSV summaries."""
+    return [*conditions(), EXTRA_CONDITION]
 
 
 def load_yaml(path: Path) -> dict:
@@ -87,8 +96,10 @@ def load_yaml(path: Path) -> dict:
 
 
 def make_energy_config(base: dict, offspring: int, food: int, env: str) -> dict:
-    if offspring not in ENERGIES or food not in ENERGIES:
-        raise ValueError("Energy values must be 3, 5, or 7")
+    if offspring not in ENERGIES or (
+        food not in ENERGIES and (offspring, food) != EXTRA_CONDITION
+    ):
+        raise ValueError("Only the 3x3 grid and O5/F4 follow-up are supported")
     if env not in ENVIRONMENTS:
         raise ValueError("Unsupported environment")
     # Keep the same settings used for the two historical one-year grids.
@@ -144,15 +155,16 @@ def write_csv(path: Path, rows: list[dict], columns: list[str]) -> None:
 
 
 def save_comparisons(root: Path, records: dict[tuple[str, str], dict]) -> None:
+    # Includes O5/F4 whenever present, even after a later normal 3x3 rerun.
     rows = [
         records[(case_name_energy(o, f), env)]
-        for o, f, env in tasks()
+        for o, f in output_conditions() for env in ENVIRONMENTS
         if (case_name_energy(o, f), env) in records
     ]
     write_csv(root / "grid_summary.csv", rows, SUMMARY_FIELDS)
 
     paired = []
-    for o, f in conditions():
+    for o, f in output_conditions():
         case = case_name_energy(o, f)
         if not all((case, mode) in records for mode in ENVIRONMENTS):
             continue
@@ -201,18 +213,23 @@ def main() -> None:
     )
     parser.add_argument("--list", action="store_true", help="Print runs, no simulation")
     parser.add_argument("--limit", type=int, help="Run at most N new simulations")
+    parser.add_argument(
+        "--only-f4", action="store_true",
+        help="Run only O5/F4 (two environments), append to existing 18 results",
+    )
     args = parser.parse_args()
     if args.limit is not None and args.limit <= 0:
         parser.error("--limit must be positive")
 
-    jobs = tasks()
-    if len(jobs) != 18 or len({(o, f, env) for o, f, env in jobs}) != 18:
-        raise RuntimeError("Expected 18 distinct runs")
+    jobs = tasks(only_f4=args.only_f4)
+    expected_jobs = 2 if args.only_f4 else 18
+    if len(jobs) != expected_jobs or len(set(jobs)) != expected_jobs:
+        raise RuntimeError(f"Expected {expected_jobs} distinct runs")
 
     if args.list:
         for index, (offspring, food, env) in enumerate(jobs, 1):
             print(
-                f"{index:02d}/18: {case_name_energy(offspring, food)} "
+                f"{index:02d}/{expected_jobs}: {case_name_energy(offspring, food)} "
                 f"{env} | offspring={offspring}, food={food}, seed=0, 1 year"
             )
         return
@@ -279,7 +296,7 @@ def main() -> None:
             )
             save_comparisons(root, records)
             skipped += 1
-            print(f"[{index:02d}/18] Rebuilt summary: {case}/{env}", flush=True)
+            print(f"[{index:02d}/{expected_jobs}] Rebuilt summary: {case}/{env}", flush=True)
             continue
 
         if args.limit is not None and new_runs >= args.limit:
@@ -296,7 +313,7 @@ def main() -> None:
             "--no-plots",
         ]
         job_log = logs_dir / f"{case}_{env}.txt"
-        print(f"[{index:02d}/18] RUN {case}/{env}", flush=True)
+        print(f"[{index:02d}/{expected_jobs}] RUN {case}/{env}", flush=True)
         began = time.monotonic()
         with job_log.open("w", encoding="utf-8") as handle:
             proc = subprocess.run(
@@ -332,7 +349,10 @@ def main() -> None:
         and records[(case_name_energy(o, f), env)].get("status") == "complete"
         for o, f, env in jobs
     )
-    print(f"Completed {done}/18 | New simulations: {new_runs} | Skipped: {skipped}")
+    print(
+        f"Completed {done}/{expected_jobs} for requested task set | "
+        f"New simulations: {new_runs} | Skipped: {skipped}"
+    )
     print(f"Summary: {root / 'grid_summary.csv'}")
     print(f"Paired comparison: {root / 'grid_paired_comparison.csv'}")
     print("Re-run the command to resume unfinished cases.")
