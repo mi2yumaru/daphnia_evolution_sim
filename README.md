@@ -289,13 +289,37 @@ organism:
 
 を表します。
 
+### 採用した基本エネルギーパラメータ（No.10）
+
+12条件 × 4パッチ/ランダムの2環境 × 10seed × 5年間の校正実験から、
+No.10（`L0p15_M1p00_T15_C10`）を本実験用の基準設定として採用しました。
+
+| パラメータ | 採用値 |
+|---|---:|
+| `organism.living_cost`（毎stepの生活維持コスト） | `0.15` |
+| `organism.move_cost`（実際に移動したstepのみ追加消費） | `1.0` |
+| `organism.reproduction_threshold`（基本繁殖閾値） | `15` |
+| `organism.reproduction_cost` | `10` |
+| `organism.offspring_energy` | `5` |
+| `environment.food_energy` | `5` |
+
+`configs/default.yaml`（4パッチ）・`configs/random_periodic.yaml`（ランダム）・
+`configs/patch16.yaml`（16パッチの追加検証用）を同じエネルギーパラメータに更新しています。
+ただし、No.10の長期校正結果は4パッチ・ランダムで得られたものであり、
+**16パッチでの妥当性は未検証**です。
+
+過去データ再現用の`configs/step4_*.yaml`は変更しません。
+また、過去のグリッドサーチは条件ごとの4パラメータを実行時に上書きするため、
+今回の基本設定更新で過去の条件値が自動的にNo.10へ置換されることはありません。
+過去の実験を再現する際は、保存済みの`config_used.yaml`と当時のコード版を使用してください。
+
 ### 無性生殖
 
 個体のエネルギーが繁殖閾値を超えると、子個体を生成できます。
 
 ```yaml
 organism:
-  reproduction_threshold: 20
+  reproduction_threshold: 15
   reproduction_cost: 10
   offspring_energy: 5
 ```
