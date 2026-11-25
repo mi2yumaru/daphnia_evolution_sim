@@ -104,9 +104,10 @@ organism:
   initial_placement_near_max_distance: 3.0
   initial_placement_far_min_distance: 15.0
   initial_energy: 10
-  move_cost: 0.5
-  living_cost: 0.3
-  reproduction_threshold: 20
+  # No.10 calibration parameters; 16-patch sensitivity needs separate validation.
+  move_cost: 1.0
+  living_cost: 0.15
+  reproduction_threshold: 15
   reproduction_cost: 10
   offspring_energy: 5
 
