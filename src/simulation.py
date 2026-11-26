@@ -375,6 +375,16 @@ class Simulation:
                 np.random.SeedSequence([int(sim_config["random_seed"]), 4])
             )
 
+        # The founder exchange traits can start at zero while the four
+        # behavioral traits retain the same seeded random initialization.
+        initial_exchange_traits = str(
+            gene_exchange_config.get("initial_trait_mode", "random")
+        )
+        if initial_exchange_traits not in {"random", "zero"}:
+            raise ValueError(
+                "gene_exchange.initial_trait_mode must be 'random' or 'zero'"
+            )
+
         # 個体群の初期化
         self.organisms: List[Organism] = []
         for _ in range(org_config["initial_population"]):
@@ -407,16 +417,24 @@ class Simulation:
             else:
                 initial_age = 0
 
+            # Draw the whole founder genome using the original RNG stream;
+            # zeroing exchange loci afterwards preserves behavioral loci and
+            # RNG alignment with the random-initialized control.
+            founder_genome = (
+                Organism._generate_random_genome(founder_genome_rng)
+                if paired_initialization
+                else Organism._generate_random_genome()
+            )
+            if initial_exchange_traits == "zero":
+                founder_genome[-2 * Organism.LOCI_PER_TRAIT:] = 0
+
             organism = Organism(
                 x=x,
                 y=y,
                 initial_energy=org_config["initial_energy"],
                 genome_length=gen_config["genome_length"],
                 # In STEP4, genetics are independent of food placement RNG.
-                genome=(
-                    Organism._generate_random_genome(founder_genome_rng)
-                    if paired_initialization else None
-                ),
+                genome=founder_genome,
                 initial_age=initial_age,
                 lifespan=lifespan,
 
